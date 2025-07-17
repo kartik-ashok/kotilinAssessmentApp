@@ -28,9 +28,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.example.kotlinassessmentapp.R
 @Composable
-fun WelcomeScreen(modifier: Modifier = Modifier) {
+fun WelcomeScreen(navController: NavHostController,modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -95,7 +96,9 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(16.dp)) // ✅ fixed
 
             Button(
-                onClick = {},
+                onClick = {
+                    navController.navigate("home")
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -115,10 +118,3 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
     }
 }
 
-
-@Composable
-@Preview(showBackground = true)
-fun Pre(modifier: Modifier = Modifier) {
-
-    WelcomeScreen()
-}

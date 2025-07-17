@@ -1,5 +1,6 @@
 package com.example.kotlinassessmentapp
 
+import AppNavigation
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.example.kotlinassessmentapp.screens.HomeScreen
 import com.example.kotlinassessmentapp.ui.theme.KotlinAssessmentAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,17 +27,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             KotlinAssessmentAppTheme {
-//                ProfileCard()
-//                Column(
-//                    modifier = Modifier.fillMaxSize(), // <-- This makes the Column take full screen
-//                    verticalArrangement = Arrangement.Center,
-//                    horizontalAlignment = Alignment.CenterHorizontally
-//                ) {
-//
-//                    CounterScreen()
-//                }
-                ToogleCheckBpx()
-                }
+                AppNavigation()
+
+
+            }
         }
     }
 }
