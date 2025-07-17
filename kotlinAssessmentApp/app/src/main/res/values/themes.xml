@@ -8,24 +8,24 @@
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>\
     </style>
 
-    <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">
-        <!-- Background color -->
-        <item name="windowSplashScreenBackground">@color/yellow</item>
+<!--    <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">-->
+<!--        &lt;!&ndash; Background color &ndash;&gt;-->
+<!--        <item name="windowSplashScreenBackground">@color/yellow</item>-->
 
-        <!-- Logo icon (should be a vector drawable for animation) -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/zomato_logo_transparent_background</item>
+<!--        &lt;!&ndash; Logo icon (should be a vector drawable for animation) &ndash;&gt;-->
+<!--        <item name="windowSplashScreenAnimatedIcon">@drawable/zomato_logo_transparent_background</item>-->
 
-        <!-- Optional: Control icon animation duration (default is 1000ms) -->
-        <item name="windowSplashScreenAnimationDuration">700</item>
+<!--        &lt;!&ndash; Optional: Control icon animation duration (default is 1000ms) &ndash;&gt;-->
+<!--        <item name="windowSplashScreenAnimationDuration">700</item>-->
 
-<!--        &lt;!&ndash; Optional: Center logo vertically or align to bottom &ndash;&gt;-->
-<!--        <item name="windowSplashScreenIconCenter">true</item>-->
+<!--&lt;!&ndash;        &lt;!&ndash; Optional: Center logo vertically or align to bottom &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;        <item name="windowSplashScreenIconCenter">true</item>&ndash;&gt;-->
 
-<!--        &lt;!&ndash; Add branding image below the icon (useful for taglines or secondary logo) &ndash;&gt;-->
-<!--        <item name="windowSplashScreenBrandingImage">@drawable/splash_branding</item>-->
+<!--&lt;!&ndash;        &lt;!&ndash; Add branding image below the icon (useful for taglines or secondary logo) &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;        <item name="windowSplashScreenBrandingImage">@drawable/splash_branding</item>&ndash;&gt;-->
 
-        <!-- Post-splash app theme -->
-        <item name="postSplashScreenTheme">@style/Theme.KotlinAssessmentApp</item>
-    </style>
+<!--        &lt;!&ndash; Post-splash app theme &ndash;&gt;-->
+<!--        <item name="postSplashScreenTheme">@style/Theme.KotlinAssessmentApp</item>-->
+<!--    </style>-->
 
 </resources>
