@@ -1,6 +1,7 @@
 package com.example.kotlinassessmentapp
 
 //import AppNavigation
+import HomeScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.example.kotlinassessmentapp.bottom_nav.MainScreen
+import com.example.kotlinassessmentapp.screens.SplashScreen
 import com.example.kotlinassessmentapp.ui.theme.KotlinAssessmentAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,6 +30,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             KotlinAssessmentAppTheme {
 //                AppNavigation()
+
+//                SplashScreen()
+//                HomeScreen()
+
+                MainScreen()
 
 
             }

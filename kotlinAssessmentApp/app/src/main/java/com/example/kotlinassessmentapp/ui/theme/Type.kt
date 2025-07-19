@@ -30,29 +30,53 @@ fun rememberGoogleFontFamily(fontName: String): FontFamily {
 @Composable
 fun AppTypography(): Typography {
     val poppinsFontFamily = rememberGoogleFontFamily("Poppins") // Use your desired Google Font here
+    val lobsterFontFamily = rememberGoogleFontFamily("Lobster")
+    val robotoFontFamily = rememberGoogleFontFamily("Roboto")
+    val montserratFontFamily = rememberGoogleFontFamily("Montserrat")
+    val interFontFamily = rememberGoogleFontFamily("Inter")
 
     return Typography(
-        bodyLarge = TextStyle(
-            fontFamily = poppinsFontFamily,
-            fontWeight = FontWeight.Normal,
-            fontSize = 16.sp,
-            lineHeight = 24.sp,
-            letterSpacing = 0.5.sp
+//        bodyLarge = TextStyle(
+//            fontFamily = montserratFontFamily,
+//            fontWeight = FontWeight.Normal,
+//            fontSize = 44.sp,
+//            lineHeight = 24.sp,
+//            letterSpacing = 0.5.sp
+//        ),
+        headlineMedium =TextStyle(
+            fontFamily = montserratFontFamily,
+            fontWeight = FontWeight.W400,
+            fontSize = 30.sp,
+            lineHeight = 28.sp,
+            letterSpacing = 0.sp,
+            color = Color.Black
         ),
-        titleLarge = TextStyle(
-            fontFamily = poppinsFontFamily,
+        headlineSmall =TextStyle(
+            fontFamily = interFontFamily,
+            fontWeight = FontWeight.W400,
+            fontSize = 18.sp,
+            lineHeight = 28.sp,
+            letterSpacing = 0.sp,
+            color = Color.Gray
+        ),
+            titleLarge = TextStyle(
+            fontFamily = lobsterFontFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 22.sp,
+            fontSize = 44.sp,
             lineHeight = 28.sp,
             letterSpacing = 0.sp,
             color = Color.White
         ),
         labelSmall = TextStyle(
-            fontFamily = poppinsFontFamily,
+            fontFamily = robotoFontFamily,
             fontWeight = FontWeight.Medium,
-            fontSize = 11.sp,
+            fontSize = 16.sp,
             lineHeight = 16.sp,
-            letterSpacing = 0.5.sp
-        )
+            letterSpacing = 0.5.sp,
+            color = Color.White
+        ),
+
+
     )
 }
+
