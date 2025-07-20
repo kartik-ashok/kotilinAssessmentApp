@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.kotlinassessmentapp.bottom_nav.MainScreen
+import com.example.kotlinassessmentapp.screens.BookNow
 import com.example.kotlinassessmentapp.screens.SplashScreen
 import com.example.kotlinassessmentapp.ui.theme.KotlinAssessmentAppTheme
 
@@ -34,8 +35,9 @@ class MainActivity : ComponentActivity() {
 //                SplashScreen()
 //                HomeScreen()
 
-                MainScreen()
+//                MainScreen()
 
+                BookNow()
 
             }
         }
