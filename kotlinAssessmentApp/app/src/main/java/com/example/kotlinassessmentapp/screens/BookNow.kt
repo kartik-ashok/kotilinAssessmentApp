@@ -405,10 +405,4 @@ fun BookNow(navController: NavHostController ,modifier: Modifier = Modifier) {
 }
 
 
-//🔍 Without padding:
-//The bottom content may be hidden behind the button.
-//
-//✅ With padding:
-//The bottom content stays fully visible and accessible, even with the button fixed in place.
-//
-//Let me know if you'd like a 5-line working example to try in your project!
+
