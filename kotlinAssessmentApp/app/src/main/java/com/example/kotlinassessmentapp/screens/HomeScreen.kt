@@ -51,6 +51,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 
 
 import com.example.kotlinassessmentapp.R;
@@ -218,7 +219,9 @@ import com.example.kotlinassessmentapp.ui.theme.AppTypography
 
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(
+    navController: NavHostController
+    ,modifier: Modifier = Modifier) {
     val typography = AppTypography()
     var text by remember { mutableStateOf("") }
     val fruits = listOf("Apple", "Banana", "Orange", "Mango", "Strawberry")
@@ -437,7 +440,14 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
 //Button has its own default background and content color defined by the Material Theme, which ignores the Modifier.background(...) you applied outside the button content.
         Button(
-            onClick = { /* Handle button click */ },
+            onClick = { /* Handle button click */
+                    navController.navigate("bookNow"){
+                        popUpTo("login") { inclusive = true } // remove login from back stack
+                        launchSingleTop = true //avoid multiple copies
+                    }
+//                Navigate to HomePage and clear everything before it
+
+                    },
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
@@ -466,7 +476,8 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         Spacer(modifier.height(20.dp))
 
         Button(
-            onClick = { /* Handle button click */ },
+            onClick = {
+            /* Handle button click */ },
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),

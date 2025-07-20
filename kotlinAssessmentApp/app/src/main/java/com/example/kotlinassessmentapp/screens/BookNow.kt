@@ -203,6 +203,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -215,13 +216,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.kotlinassessmentapp.R
 import com.example.kotlinassessmentapp.ui.theme.AppTypography
 
 @Composable
-fun BookNow(modifier: Modifier = Modifier) {
+fun BookNow(navController: NavHostController ,modifier: Modifier = Modifier) {
     val typography = AppTypography()
     val scrollState = rememberScrollState()
+
+    DisposableEffect(Unit) {
+        println("PageOne Mounted")
+        onDispose {
+            println("PageOne Disposed")
+            // Clean up resources like TextField focus, timers, listeners, etc.
+        }
+    }
 
     Box(
         modifier = modifier
@@ -373,7 +384,12 @@ fun BookNow(modifier: Modifier = Modifier) {
 
         // Fixed Bottom Button
         TextButton(
-            onClick = { /* Handle click */ },
+            onClick = { /* Handle click */
+                navController.navigate("home"){
+                    popUpTo(0) { inclusive = true } // clear entire back stack
+                }
+
+            },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()

@@ -1,6 +1,7 @@
 package com.example.kotlinassessmentapp
 
 //import AppNavigation
+import AppNavigation
 import HomeScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -37,8 +38,9 @@ class MainActivity : ComponentActivity() {
 
 //                MainScreen()
 
-                BookNow()
+//                BookNow()
 
+                AppNavigation()
             }
         }
     }

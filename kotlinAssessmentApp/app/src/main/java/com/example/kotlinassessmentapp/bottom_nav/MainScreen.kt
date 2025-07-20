@@ -48,9 +48,16 @@ fun MainScreen() {
             startDestination = BottomNavItem.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(BottomNavItem.Home.route) { HomeScreen() }
+            composable(BottomNavItem.Home.route) { HomeScreen(navController) }
             composable(BottomNavItem.Profile.route) { ProfileScreen() }
-            composable(BottomNavItem.Settings.route) { HomeScreen() }
+            composable(BottomNavItem.Settings.route) { HomeScreen(navController) }
         }
     }
 }
+
+
+//
+//| Parameter Type | How to define     | Can be skipped in usage? |
+//| -------------- | ----------------- | ------------------------ |
+//| Required       | No default value  | ❌ No                     |
+//| Optional       | Has default value | ✅ Yes                    |
