@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 fun PageIndicator(
     modifier: Modifier = Modifier,
     pagesSize: Int,
+
     selectedPage: Int,
     selecedColor: Color= MaterialTheme.colorScheme.primary,
     unselectedColor: Color = MaterialTheme.colorScheme.secondary
