@@ -114,8 +114,10 @@ data class ExpenseUiState(
  * 4. TESTABLE - Can be tested with mock repositories
  */
 class ExpenseViewModel(
-    private val repository: ExpenseRepository = ExpenseRepository.getInstance()
+    private val repository: ExpenseRepository
 ) : ViewModel() {
+
+    constructor() : this(ExpenseRepository.getInstance())
     
     private val _uiState = MutableStateFlow(ExpenseUiState())
     val uiState: StateFlow<ExpenseUiState> = _uiState.asStateFlow()

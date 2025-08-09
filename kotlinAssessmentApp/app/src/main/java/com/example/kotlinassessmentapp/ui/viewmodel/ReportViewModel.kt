@@ -74,8 +74,10 @@ data class ReportUiState @RequiresApi(Build.VERSION_CODES.O) constructor(
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReportViewModel(
-    private val repository: ExpenseRepository = ExpenseRepository.getInstance()
+    private val repository: ExpenseRepository
 ) : ViewModel() {
+
+    constructor() : this(ExpenseRepository.getInstance())
     
     private val _uiState = MutableStateFlow(ReportUiState())
     val uiState: StateFlow<ReportUiState> = _uiState.asStateFlow()

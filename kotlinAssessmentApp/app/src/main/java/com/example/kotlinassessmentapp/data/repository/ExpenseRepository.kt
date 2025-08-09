@@ -1,7 +1,10 @@
 package com.example.kotlinassessmentapp.data.repository
 
+import android.content.Context
 import com.example.kotlinassessmentapp.data.model.*
 import com.example.kotlinassessmentapp.domain.repository.IExpenseRepository
+import com.example.kotlinassessmentapp.utils.FileExportManager
+import com.example.kotlinassessmentapp.utils.ExportResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,10 +29,12 @@ import java.time.format.DateTimeFormatter
  * 3. REACTIVE PROGRAMMING - Uses StateFlow for reactive updates
  * 4. THREAD SAFETY - StateFlow handles concurrent access safely
  */
-class ExpenseRepository private constructor() : IExpenseRepository {
-    
+class ExpenseRepository private constructor(private val context: Context) : IExpenseRepository {
+
     private val _expenses = MutableStateFlow<List<Expense>>(emptyList())
     override val expenses: Flow<List<Expense>> = _expenses.asStateFlow()
+
+    private val fileExportManager = FileExportManager(context)
     
     // Sample data for demonstration
     init {
@@ -135,34 +140,22 @@ class ExpenseRepository private constructor() : IExpenseRepository {
 
     /**
      * Export functionality for reports
-     * Simulates PDF/CSV export generation
+     * Real PDF/CSV export generation using FileExportManager
      */
-    fun generateReportCSV(): String {
-        val expenses = _expenses.value
-        val csvContent = buildString {
-            appendLine("Date,Title,Category,Amount,Description")
-            expenses.forEach { expense ->
-                appendLine(
-                    "${expense.date.format(DateTimeFormatter.ISO_LOCAL_DATE)}," +
-                    "\"${expense.title}\"," +
-                    "\"${expense.category.name}\"," +
-                    "${expense.amount}," +
-                    "\"${expense.description}\""
-                )
-            }
-        }
-
-        // Simulate file creation
-        val fileName = "expense_report_${System.currentTimeMillis()}.csv"
-        // In a real app, you would save this to internal storage or external storage
-        return fileName
+    suspend fun generateReportPDF(): ExportResult {
+        return fileExportManager.exportToPDF(_expenses.value)
     }
 
-    fun generateReportPDF(): String {
-        // Simulate PDF generation
-        val fileName = "expense_report_${System.currentTimeMillis()}.pdf"
-        // In a real app, you would use a PDF library like iText or similar
-        return fileName
+    suspend fun generateReportCSV(): ExportResult {
+        return fileExportManager.exportToCSV(_expenses.value)
+    }
+
+    suspend fun createShareablePDFReport(): ExportResult {
+        return fileExportManager.exportToPDF(_expenses.value)
+    }
+
+    fun createShareIntent(pdfResult: ExportResult.Success): android.content.Intent {
+        return fileExportManager.createShareIntent(pdfResult.uri)
     }
 
     fun getShareableReportData(): String {
@@ -194,11 +187,15 @@ class ExpenseRepository private constructor() : IExpenseRepository {
     companion object {
         @Volatile
         private var INSTANCE: ExpenseRepository? = null
-        
-        fun getInstance(): ExpenseRepository {
+
+        fun getInstance(context: Context): ExpenseRepository {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: ExpenseRepository().also { INSTANCE = it }
+                INSTANCE ?: ExpenseRepository(context.applicationContext).also { INSTANCE = it }
             }
+        }
+
+        fun getInstance(): ExpenseRepository {
+            return INSTANCE ?: throw IllegalStateException("ExpenseRepository must be initialized with context first")
         }
     }
 } 

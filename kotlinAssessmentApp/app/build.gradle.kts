@@ -141,6 +141,14 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     // Coil for async image loading - REQUIRED for receipt image display
 
+    // PDF Generation - ESSENTIAL for Report Export
+    implementation("com.itextpdf:itext7-core:7.2.5")
+    // iText 7 for PDF generation - REQUIRED for expense report PDF export
+
+    // File Operations - ESSENTIAL for Export Functionality
+    implementation("androidx.documentfile:documentfile:1.0.1")
+    // Document file API - REQUIRED for file management and sharing
+
     // Theme Support - REQUIRED even for pure Compose apps
     implementation("com.google.android.material:material:1.12.0")
     // REASON: Needed for Android theme system and Activity themes
@@ -159,5 +167,7 @@ dependencies {
     // implementation("androidx.compose.material3:material3:1.2.0")
     // REASON: Duplicate dependency - already included via libs.androidx.material3
     // ALTERNATIVE: Use the BOM-managed version for consistency
+
+    implementation("com.itextpdf:itext7-core:7.2.5")
 
 }

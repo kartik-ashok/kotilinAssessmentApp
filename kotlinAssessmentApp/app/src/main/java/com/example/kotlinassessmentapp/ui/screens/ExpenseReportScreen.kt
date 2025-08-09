@@ -20,6 +20,8 @@ import com.example.kotlinassessmentapp.data.repository.ExpenseRepository
 import com.example.kotlinassessmentapp.ui.components.*
 import com.example.kotlinassessmentapp.ui.viewmodel.ExpenseViewModel
 import com.example.kotlinassessmentapp.ui.viewmodel.ReportViewModel
+import com.example.kotlinassessmentapp.utils.ExportResult
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 /**
@@ -43,7 +45,10 @@ fun ExpenseReportScreen(
 ) {
     val uiState by reportViewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val repository = ExpenseRepository.getInstance()
+    val repository = ExpenseRepository.getInstance(context)
+    val coroutineScope = rememberCoroutineScope()
+
+    var isExporting by remember { mutableStateOf(false) }
     
     Column(
         modifier = Modifier
@@ -89,42 +94,70 @@ fun ExpenseReportScreen(
                         text = { Text("Export as PDF") },
                         onClick = {
                             showExportMenu = false
-                            val fileName = repository.generateReportPDF()
-                            Toast.makeText(context, "PDF exported: $fileName", Toast.LENGTH_SHORT).show()
+                            isExporting = true
+                            coroutineScope.launch {
+                                when (val result = repository.generateReportPDF()) {
+                                    is ExportResult.Success -> {
+                                        Toast.makeText(context, "PDF exported to Downloads: expense_report.pdf", Toast.LENGTH_LONG).show()
+                                    }
+                                    is ExportResult.Error -> {
+                                        Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                                isExporting = false
+                            }
                         },
                         leadingIcon = {
                             Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                        }
+                        },
+                        enabled = !isExporting
                     )
                     
                     DropdownMenuItem(
                         text = { Text("Export as CSV") },
                         onClick = {
                             showExportMenu = false
-                            val fileName = repository.generateReportCSV()
-                            Toast.makeText(context, "CSV exported: $fileName", Toast.LENGTH_SHORT).show()
+                            isExporting = true
+                            coroutineScope.launch {
+                                when (val result = repository.generateReportCSV()) {
+                                    is ExportResult.Success -> {
+                                        Toast.makeText(context, "CSV exported to Downloads: expense_report.csv", Toast.LENGTH_LONG).show()
+                                    }
+                                    is ExportResult.Error -> {
+                                        Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                                isExporting = false
+                            }
                         },
                         leadingIcon = {
                             Icon(Icons.Default.TableChart, contentDescription = null)
-                        }
+                        },
+                        enabled = !isExporting
                     )
                     
                     DropdownMenuItem(
                         text = { Text("Share Report") },
                         onClick = {
                             showExportMenu = false
-                            val reportData = repository.getShareableReportData()
-                            val shareIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, reportData)
-                                putExtra(Intent.EXTRA_SUBJECT, "Expense Report")
+                            isExporting = true
+                            coroutineScope.launch {
+                                when (val result = repository.createShareablePDFReport()) {
+                                    is ExportResult.Success -> {
+                                        val shareIntent = repository.createShareIntent(result)
+                                        context.startActivity(Intent.createChooser(shareIntent, "Share Report"))
+                                    }
+                                    is ExportResult.Error -> {
+                                        Toast.makeText(context, "Share failed: ${result.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                                isExporting = false
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, "Share Report"))
                         },
                         leadingIcon = {
                             Icon(Icons.Default.Share, contentDescription = null)
-                        }
+                        },
+                        enabled = !isExporting
                     )
                 }
             }
@@ -206,32 +239,68 @@ fun ExpenseReportScreen(
             ) {
                 OutlinedButton(
                     onClick = {
-                        val fileName = repository.generateReportPDF()
-                        Toast.makeText(context, "PDF exported: $fileName", Toast.LENGTH_SHORT).show()
+                        isExporting = true
+                        coroutineScope.launch {
+                            when (val result = repository.generateReportPDF()) {
+                                is ExportResult.Success -> {
+                                    Toast.makeText(context, "PDF exported to Downloads: expense_report.pdf", Toast.LENGTH_LONG).show()
+                                }
+                                is ExportResult.Error -> {
+                                    Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                            isExporting = false
+                        }
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isExporting
                 ) {
-                    Icon(
-                        Icons.Default.PictureAsPdf,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    if (isExporting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.PictureAsPdf,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Export PDF")
                 }
                 
                 OutlinedButton(
                     onClick = {
-                        val fileName = repository.generateReportCSV()
-                        Toast.makeText(context, "CSV exported: $fileName", Toast.LENGTH_SHORT).show()
+                        isExporting = true
+                        coroutineScope.launch {
+                            when (val result = repository.generateReportCSV()) {
+                                is ExportResult.Success -> {
+                                    Toast.makeText(context, "CSV exported to Downloads: expense_report.csv", Toast.LENGTH_LONG).show()
+                                }
+                                is ExportResult.Error -> {
+                                    Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                            isExporting = false
+                        }
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isExporting
                 ) {
-                    Icon(
-                        Icons.Default.TableChart,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    if (isExporting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.TableChart,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Export CSV")
                 }
@@ -239,25 +308,39 @@ fun ExpenseReportScreen(
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            // Share Button
+            // Share Button (PDF only)
             Button(
                 onClick = {
-                    val reportData = repository.getShareableReportData()
-                    val shareIntent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, reportData)
-                        putExtra(Intent.EXTRA_SUBJECT, "Expense Report")
+                    isExporting = true
+                    coroutineScope.launch {
+                        when (val result = repository.createShareablePDFReport()) {
+                            is ExportResult.Success -> {
+                                val shareIntent = repository.createShareIntent(result)
+                                context.startActivity(Intent.createChooser(shareIntent, "Share Report"))
+                            }
+                            is ExportResult.Error -> {
+                                Toast.makeText(context, "Share failed: ${result.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                        isExporting = false
                     }
-                    context.startActivity(Intent.createChooser(shareIntent, "Share Report"))
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isExporting
             ) {
-                Icon(
-                    Icons.Default.Share,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
+                if (isExporting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Share Report")
             }
