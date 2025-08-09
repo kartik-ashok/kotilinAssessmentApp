@@ -6,7 +6,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,7 +40,10 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun HomeScreen(
     onAddExpenseClick: () -> Unit,
-    expenseViewModel: ExpenseViewModel = viewModel()
+    onViewAllExpensesClick: () -> Unit = {},
+    onViewReportsClick: () -> Unit = {},
+    expenseViewModel: ExpenseViewModel = viewModel(),
+    themeViewModel: com.example.kotlinassessmentapp.ui.theme.ThemeViewModel? = null
 ) {
     val uiState by expenseViewModel.uiState.collectAsState()
     
@@ -57,17 +63,34 @@ fun HomeScreen(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-            
-            FloatingActionButton(
-                onClick = onAddExpenseClick,
-                modifier = Modifier.size(48.dp),
-                containerColor = MaterialTheme.colorScheme.primary
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Add Expense",
-                    tint = Color.White
-                )
+                // Theme Toggle Button
+                themeViewModel?.let { viewModel ->
+                    IconButton(
+                        onClick = { viewModel.toggleTheme() }
+                    ) {
+                        Icon(
+                            Icons.Default.DarkMode,
+                            contentDescription = "Toggle Theme"
+                        )
+                    }
+                }
+
+                FloatingActionButton(
+                    onClick = onAddExpenseClick,
+                    modifier = Modifier.size(48.dp),
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add Expense",
+                        tint = Color.White
+                    )
+                }
             }
         }
         
@@ -81,7 +104,41 @@ fun HomeScreen(
         )
         
         Spacer(modifier = Modifier.height(16.dp))
-        
+
+        // Quick Actions
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onViewAllExpensesClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.List,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("All Expenses")
+            }
+
+            OutlinedButton(
+                onClick = onViewReportsClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    Icons.Default.Analytics,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Reports")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Recent Expenses Header
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -94,7 +151,7 @@ fun HomeScreen(
                 fontWeight = FontWeight.SemiBold
             )
             
-            TextButton(onClick = { /* Navigate to all expenses */ }) {
+            TextButton(onClick = onViewAllExpensesClick) {
                 Text("View All")
             }
         }

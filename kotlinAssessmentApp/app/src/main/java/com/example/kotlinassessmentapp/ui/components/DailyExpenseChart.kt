@@ -84,7 +84,8 @@ fun DailyExpenseChart(
                             
                             // Bar
                             val barHeight = if (maxAmount > 0) {
-                                max(8.dp, (dayData.totalAmount / maxAmount * 150).dp)
+                                val calculatedHeight = (dayData.totalAmount / maxAmount * 150).dp
+                                if (calculatedHeight < 8.dp) 8.dp else calculatedHeight
                             } else 8.dp
                             
                             Box(

@@ -1,6 +1,4 @@
 package com.example.kotlinassessmentapp.ui.screens
-
-import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -40,13 +38,15 @@ import java.time.LocalDateTime
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.ui.layout.ContentScale
-//import coil.compose.AsyncImage
+import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import android.Manifest
+import androidx.compose.ui.platform.LocalContext
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import android.os.Build
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 /**
  * AddExpenseScreen following Enterprise Form Handling Patterns
@@ -90,6 +90,19 @@ fun AddExpenseScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         receiptImageUri = uri
+    }
+
+    // Permission launcher for storage access
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Permission granted, launch image picker
+            imagePickerLauncher.launch("image/*")
+        } else {
+            // Permission denied, show message
+            android.widget.Toast.makeText(context, "Storage permission is required to select images", android.widget.Toast.LENGTH_LONG).show()
+        }
     }
     
     // Get today's total expenses - Reactive StateFlow (no manual refresh needed)
@@ -262,7 +275,25 @@ fun AddExpenseScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(if (receiptImageUri != null) 200.dp else 100.dp)
-                .clickable { imagePickerLauncher.launch("image/*") },
+                .clickable {
+                    // Check permission before launching image picker
+                    val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        Manifest.permission.READ_MEDIA_IMAGES
+                    } else {
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                    }
+
+                    when {
+                        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED -> {
+                            // Permission already granted
+                            imagePickerLauncher.launch("image/*")
+                        }
+                        else -> {
+                            // Request permission
+                            permissionLauncher.launch(permission)
+                        }
+                    }
+                },
             colors = CardDefaults.cardColors(
                 containerColor = if (receiptImageUri != null)
                     MaterialTheme.colorScheme.primaryContainer
@@ -387,7 +418,7 @@ fun AddExpenseScreen(
                             showSuccessAnimation = true
                             
                             // Show Toast: "Expense Added"
-                            Toast.makeText(context, "Expense Added", Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, "Expense Added", android.widget.Toast.LENGTH_SHORT).show()
                             
                             // Animate expense entry
                             delay(300)
@@ -445,15 +476,7 @@ fun AddExpenseScreen(
     }
 }
 
-@Composable
-fun AsyncImage(
-    model: Uri?,
-    contentDescription: String,
-    modifier: Modifier,
-    contentScale: ContentScale
-) {
-    TODO("Not yet implemented")
-}
+
 
 @Composable
 private fun CategoryItem(

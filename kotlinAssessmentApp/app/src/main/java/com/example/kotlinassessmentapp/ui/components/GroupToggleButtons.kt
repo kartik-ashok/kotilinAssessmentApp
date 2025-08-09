@@ -2,6 +2,7 @@ package com.example.kotlinassessmentapp.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -19,7 +20,7 @@ fun GroupToggleButtons(
     modifier: Modifier = Modifier
 ) {
     val groups = listOf(
-        GroupBy.NONE to ("None" to Icons.Default.List),
+        GroupBy.NONE to ("None" to Icons.AutoMirrored.Filled.List),
         GroupBy.CATEGORY to ("Category" to Icons.Default.Category),
         GroupBy.TIME to ("Time" to Icons.Default.Schedule)
     )

@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kotlinassessmentapp.data.repository.ExpenseRepository
 import com.example.kotlinassessmentapp.ui.components.*
+import com.example.kotlinassessmentapp.ui.viewmodel.ExpenseViewModel
 import com.example.kotlinassessmentapp.ui.viewmodel.ReportViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +36,10 @@ import com.example.kotlinassessmentapp.ui.viewmodel.ReportViewModel
 @Composable
 fun ExpenseReportScreen(
     onBackClick: () -> Unit,
-    reportViewModel: ReportViewModel = viewModel()
+    initialReportType: String = "weekly",
+    initialDateRange: String? = null,
+    reportViewModel: ReportViewModel = viewModel(),
+    expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val uiState by reportViewModel.uiState.collectAsState()
     val context = LocalContext.current

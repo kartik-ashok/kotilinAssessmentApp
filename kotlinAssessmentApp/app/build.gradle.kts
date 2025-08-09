@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.kotlinassessmentapp"
-        minSdk = 21
+        minSdk = 26  // Updated to support java.time APIs (Android 8.0+)
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -101,10 +101,14 @@ dependencies {
     // Unit testing - REQUIRED for TDD/BDD practices
 
     testImplementation("org.mockito:mockito-core:5.7.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     // Mocking framework - REQUIRED for isolated unit tests
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     // Coroutines testing - REQUIRED for testing async code
+
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.22")
+    // Kotlin test assertions - REQUIRED for kotlin test functions
 
     androidTestImplementation(libs.androidx.junit)
     // Android JUnit - REQUIRED for instrumented tests

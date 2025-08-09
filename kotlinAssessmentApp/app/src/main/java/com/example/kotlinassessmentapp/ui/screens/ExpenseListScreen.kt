@@ -33,6 +33,9 @@ import java.time.LocalDate
 @Composable
 fun ExpenseListScreen(
     onBackClick: () -> Unit,
+    onExpenseClick: (String) -> Unit = {},
+    initialDateFilter: String? = null,
+    initialCategoryId: String? = null,
     expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val uiState by expenseViewModel.uiState.collectAsState()

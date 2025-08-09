@@ -4,19 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.kotlinassessmentapp.ui.screens.AddExpenseScreen
-import com.example.kotlinassessmentapp.ui.screens.HomeScreen
+import com.example.kotlinassessmentapp.navigation.ExpenseNavGraph
 import com.example.kotlinassessmentapp.ui.theme.KotlinAssessmentAppTheme
-import com.example.kotlinassessmentapp.ui.viewmodel.ExpenseViewModel
+import com.example.kotlinassessmentapp.ui.theme.ThemeViewModel
 
 /**
  * MainActivity following Modern Enterprise Architecture Patterns
@@ -40,8 +38,22 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            KotlinAssessmentAppTheme {
-                ExpenseTrackerApp()
+            val themeViewModel: ThemeViewModel = viewModel()
+            val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
+            val isSystemTheme by themeViewModel.isSystemTheme.collectAsState()
+            val systemDarkTheme = isSystemInDarkTheme()
+
+            // Update theme based on system changes
+            LaunchedEffect(systemDarkTheme, isSystemTheme) {
+                if (isSystemTheme) {
+                    themeViewModel.setSystemTheme(systemDarkTheme)
+                }
+            }
+
+            KotlinAssessmentAppTheme(
+                darkTheme = if (isSystemTheme) systemDarkTheme else isDarkTheme
+            ) {
+                ExpenseTrackerApp(themeViewModel = themeViewModel)
             }
         }
     }
@@ -49,45 +61,22 @@ class MainActivity : ComponentActivity() {
 
 /**
  * Main App Composable following Enterprise Navigation Patterns
- * 
- * TEMPORARILY using viewModel() until Hilt compatibility is resolved
- * 
- * Navigation pattern used by:
- * - Google (Now in Android app)
- * - JetBrains (Kotlin Multiplatform samples)
- * - Netflix (Android app architecture)
+ *
+ * Uses Enterprise Navigation Graph with:
+ * - Type-safe navigation routes
+ * - Proper argument passing
+ * - Shared ViewModels across screens
+ * - Company standard patterns (Google, Netflix, Airbnb)
  */
 @Composable
-fun ExpenseTrackerApp() {
+fun ExpenseTrackerApp(themeViewModel: ThemeViewModel) {
     val navController = rememberNavController()
-    val expenseViewModel: ExpenseViewModel = viewModel()
-    
+
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        NavHost(
+        ExpenseNavGraph(
             navController = navController,
-            startDestination = "home",
+            themeViewModel = themeViewModel,
             modifier = Modifier.padding(innerPadding)
-        ) {
-            composable("home") {
-                HomeScreen(
-                    onAddExpenseClick = {
-                        navController.navigate("add_expense")
-                    },
-                    expenseViewModel = expenseViewModel
-                )
-            }
-            
-            composable("add_expense") {
-                AddExpenseScreen(
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
-                    onExpenseAdded = {
-                        navController.popBackStack()
-                    },
-                    expenseViewModel = expenseViewModel
-                )
-            }
-        }
+        )
     }
-} 
+}

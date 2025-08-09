@@ -2,7 +2,7 @@ package com.example.kotlinassessmentapp.ui.viewmodel
 
 import com.example.kotlinassessmentapp.data.model.Categories
 import com.example.kotlinassessmentapp.data.model.Expense
-import com.example.kotlinassessmentapp.domain.repository.IExpenseRepository
+import com.example.kotlinassessmentapp.data.repository.ExpenseRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -13,9 +13,9 @@ import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.whenever
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 
 /**
  * Unit Tests following Enterprise Testing Patterns
@@ -45,7 +45,7 @@ import kotlin.test.assertTrue
 class ExpenseViewModelTest {
     
     @Mock
-    private lateinit var mockRepository: IExpenseRepository
+    private lateinit var mockRepository: ExpenseRepository
     
     private lateinit var viewModel: ExpenseViewModel
     private val testDispatcher = UnconfinedTestDispatcher()

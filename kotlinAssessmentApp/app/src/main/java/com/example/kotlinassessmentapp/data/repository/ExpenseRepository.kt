@@ -44,7 +44,7 @@ class ExpenseRepository private constructor() : IExpenseRepository {
             Expense(
                 title = "Gas Station",
                 amount = 45.00,
-                category = Categories.TRANSPORT,
+                category = Categories.TRAVEL,
                 description = "Weekly fuel",
                 date = LocalDateTime.now().minusDays(2)
             ),
@@ -92,7 +92,7 @@ class ExpenseRepository private constructor() : IExpenseRepository {
     override fun getExpensesByDateRange(startDate: LocalDateTime, endDate: LocalDateTime): Flow<List<Expense>> {
         return expenses.map { list ->
             list.filter { expense ->
-                expense.date.isAfter(startDate) && expense.date.isBefore(endDate)
+                !expense.date.isBefore(startDate) && !expense.date.isAfter(endDate)
             }
         }
     }
