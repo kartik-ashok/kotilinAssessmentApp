@@ -22,6 +22,11 @@ import com.example.kotlinassessmentapp.ui.viewmodel.ExpenseViewModel
 import com.example.kotlinassessmentapp.ui.viewmodel.ReportViewModel
 import com.example.kotlinassessmentapp.utils.ExportResult
 import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import android.os.Build
+import android.Manifest
 
 @OptIn(ExperimentalMaterial3Api::class)
 /**
@@ -49,6 +54,22 @@ fun ExpenseReportScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var isExporting by remember { mutableStateOf(false) }
+
+    // Notification permission launcher for Android 13+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isGranted) {
+            Toast.makeText(context, "Notification permission denied. You won't receive export notifications.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Request notification permission on first launch (Android 13+)
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
     
     Column(
         modifier = Modifier
@@ -243,7 +264,7 @@ fun ExpenseReportScreen(
                         coroutineScope.launch {
                             when (val result = repository.generateReportPDF()) {
                                 is ExportResult.Success -> {
-                                    Toast.makeText(context, "PDF exported to Downloads: expense_report.pdf", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Report exported to Downloads: ${result.filePath}", Toast.LENGTH_LONG).show()
                                 }
                                 is ExportResult.Error -> {
                                     Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
@@ -277,7 +298,7 @@ fun ExpenseReportScreen(
                         coroutineScope.launch {
                             when (val result = repository.generateReportCSV()) {
                                 is ExportResult.Success -> {
-                                    Toast.makeText(context, "CSV exported to Downloads: expense_report.csv", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "CSV exported to Downloads: ${result.filePath}", Toast.LENGTH_LONG).show()
                                 }
                                 is ExportResult.Error -> {
                                     Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()

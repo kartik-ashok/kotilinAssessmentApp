@@ -1,19 +1,21 @@
 package com.example.kotlinassessmentapp.utils
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import com.example.kotlinassessmentapp.data.model.Expense
-import com.itextpdf.kernel.pdf.PdfDocument
-import com.itextpdf.kernel.pdf.PdfWriter
-import com.itextpdf.layout.Document
-import com.itextpdf.layout.element.Paragraph
-import com.itextpdf.layout.element.Table
-import com.itextpdf.layout.properties.TextAlignment
-import com.itextpdf.layout.properties.UnitValue
+import com.itextpdf.text.Document
+import com.itextpdf.text.Element
+import com.itextpdf.text.Font
+import com.itextpdf.text.PageSize
+import com.itextpdf.text.Paragraph
+import com.itextpdf.text.pdf.PdfPTable
+import com.itextpdf.text.pdf.PdfWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -33,11 +35,13 @@ import java.util.*
  * - Proper error handling and coroutine support
  */
 class FileExportManager(private val context: Context) {
-    
+
     companion object {
         private const val FILE_PROVIDER_AUTHORITY = "com.example.kotlinassessmentapp.fileprovider"
         private const val BASE_FILENAME = "expense_report"
     }
+
+    private val notificationManager = ExportNotificationManager(context)
     
     /**
      * Export expenses to PDF format
@@ -45,83 +49,150 @@ class FileExportManager(private val context: Context) {
      */
     suspend fun exportToPDF(expenses: List<Expense>): ExportResult = withContext(Dispatchers.IO) {
         try {
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            if (!downloadsDir.exists()) {
-                downloadsDir.mkdirs()
-            }
-            
-            val file = File(downloadsDir, "$BASE_FILENAME.pdf")
-            val pdfWriter = PdfWriter(file)
-            val pdfDocument = PdfDocument(pdfWriter)
-            val document = Document(pdfDocument)
-            
-            // Add title
-            document.add(
-                Paragraph("Expense Report")
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(20f)
-                    .setBold()
-            )
-            
-            document.add(Paragraph("\n"))
-            
-            // Add summary
-            val totalAmount = expenses.sumOf { it.amount }
-            val expenseCount = expenses.size
-            
-            document.add(
-                Paragraph("Summary")
-                    .setFontSize(16f)
-                    .setBold()
-            )
-            document.add(Paragraph("Total Expenses: $${String.format("%.2f", totalAmount)}"))
-            document.add(Paragraph("Number of Expenses: $expenseCount"))
-            document.add(Paragraph("Generated on: ${java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))}"))
-            
-            document.add(Paragraph("\n"))
-            
-            // Add expenses table
-            if (expenses.isNotEmpty()) {
-                document.add(
-                    Paragraph("Expense Details")
-                        .setFontSize(16f)
-                        .setBold()
-                )
-                
-                val table = Table(UnitValue.createPercentArray(floatArrayOf(20f, 25f, 20f, 15f, 20f)))
-                    .setWidth(UnitValue.createPercentValue(100f))
-                
-                // Table headers
-                table.addHeaderCell("Date")
-                table.addHeaderCell("Title")
-                table.addHeaderCell("Category")
-                table.addHeaderCell("Amount")
-                table.addHeaderCell("Description")
-                
-                // Table data
-                expenses.sortedByDescending { it.date }.forEach { expense ->
-                    table.addCell(expense.date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")))
-                    table.addCell(expense.title)
-                    table.addCell(expense.category.name)
-                    table.addCell("$${String.format("%.2f", expense.amount)}")
-                    table.addCell(expense.description.take(50) + if (expense.description.length > 50) "..." else "")
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Use MediaStore for Android 10+
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, "$BASE_FILENAME.pdf")
+                    put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
                 }
-                
-                document.add(table)
+
+                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                uri?.let { fileUri ->
+                    context.contentResolver.openOutputStream(fileUri)?.use { outputStream ->
+                        val document = Document(PageSize.A4)
+                        val writer = PdfWriter.getInstance(document, outputStream)
+
+                        document.open()
+
+                        // Add title
+                        val titleFont = Font(Font.FontFamily.HELVETICA, 20f, Font.BOLD)
+                        val title = Paragraph("Expense Report", titleFont)
+                        title.alignment = Element.ALIGN_CENTER
+                        document.add(title)
+                        document.add(Paragraph(" "))
+
+                        // Add summary
+                        val totalAmount = expenses.sumOf { it.amount }
+                        val expenseCount = expenses.size
+
+                        val summaryFont = Font(Font.FontFamily.HELVETICA, 16f, Font.BOLD)
+                        document.add(Paragraph("Summary", summaryFont))
+                        document.add(Paragraph("Total Expenses: $${String.format("%.2f", totalAmount)}"))
+                        document.add(Paragraph("Number of Expenses: $expenseCount"))
+                        document.add(Paragraph("Generated on: ${java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))}"))
+                        document.add(Paragraph(" "))
+
+                        // Add expenses table
+                        if (expenses.isNotEmpty()) {
+                            document.add(Paragraph("Expense Details", summaryFont))
+                            document.add(Paragraph(" "))
+
+                            val table = PdfPTable(5)
+                            table.widthPercentage = 100f
+                            table.setWidths(floatArrayOf(20f, 25f, 20f, 15f, 20f))
+
+                            // Table headers
+                            table.addCell("Date")
+                            table.addCell("Title")
+                            table.addCell("Category")
+                            table.addCell("Amount")
+                            table.addCell("Description")
+
+                            // Table data
+                            expenses.sortedByDescending { it.date }.forEach { expense ->
+                                table.addCell(expense.date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")))
+                                table.addCell(expense.title)
+                                table.addCell(expense.category.name)
+                                table.addCell("$${String.format("%.2f", expense.amount)}")
+                                table.addCell(expense.description.take(50) + if (expense.description.length > 50) "..." else "")
+                            }
+
+                            document.add(table)
+                        }
+
+                        document.close()
+                        writer.close()
+                    }
+                }
+                uri
+            } else {
+                // Use legacy file system for older Android versions
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadsDir.exists()) {
+                    downloadsDir.mkdirs()
+                }
+
+                val file = File(downloadsDir, "$BASE_FILENAME.pdf")
+                val document = Document(PageSize.A4)
+                val writer = PdfWriter.getInstance(document, file.outputStream())
+
+                document.open()
+
+                // Add title
+                val titleFont = Font(Font.FontFamily.HELVETICA, 20f, Font.BOLD)
+                val title = Paragraph("Expense Report", titleFont)
+                title.alignment = Element.ALIGN_CENTER
+                document.add(title)
+                document.add(Paragraph(" "))
+
+                // Add summary
+                val totalAmount = expenses.sumOf { it.amount }
+                val expenseCount = expenses.size
+
+                val summaryFont = Font(Font.FontFamily.HELVETICA, 16f, Font.BOLD)
+                document.add(Paragraph("Summary", summaryFont))
+                document.add(Paragraph("Total Expenses: $${String.format("%.2f", totalAmount)}"))
+                document.add(Paragraph("Number of Expenses: $expenseCount"))
+                document.add(Paragraph("Generated on: ${java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))}"))
+                document.add(Paragraph(" "))
+
+                // Add expenses table
+                if (expenses.isNotEmpty()) {
+                    document.add(Paragraph("Expense Details", summaryFont))
+                    document.add(Paragraph(" "))
+
+                    val table = PdfPTable(5)
+                    table.widthPercentage = 100f
+                    table.setWidths(floatArrayOf(20f, 25f, 20f, 15f, 20f))
+
+                    // Table headers
+                    table.addCell("Date")
+                    table.addCell("Title")
+                    table.addCell("Category")
+                    table.addCell("Amount")
+                    table.addCell("Description")
+
+                    // Table data
+                    expenses.sortedByDescending { it.date }.forEach { expense ->
+                        table.addCell(expense.date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")))
+                        table.addCell(expense.title)
+                        table.addCell(expense.category.name)
+                        table.addCell("$${String.format("%.2f", expense.amount)}")
+                        table.addCell(expense.description.take(50) + if (expense.description.length > 50) "..." else "")
+                    }
+
+                    document.add(table)
+                }
+
+                document.close()
+                writer.close()
+
+                FileProvider.getUriForFile(context, FILE_PROVIDER_AUTHORITY, file)
             }
-            
-            document.close()
-            
-            val uri = FileProvider.getUriForFile(
-                context,
-                FILE_PROVIDER_AUTHORITY,
-                file
-            )
-            
-            ExportResult.Success(file.absolutePath, uri, "PDF")
-            
+
+            uri?.let { fileUri ->
+                val result = ExportResult.Success("Downloads/$BASE_FILENAME.pdf", fileUri, "PDF")
+                // Show notification
+                notificationManager.showExportSuccessNotification("$BASE_FILENAME.pdf", "PDF", fileUri)
+                result
+            } ?: ExportResult.Error("Failed to create PDF file")
+
         } catch (e: Exception) {
-            ExportResult.Error("Failed to export PDF: ${e.message}")
+            val errorResult = ExportResult.Error("Failed to export PDF: ${e.message}")
+            // Show error notification
+            notificationManager.showExportFailureNotification("$BASE_FILENAME.pdf", e.message ?: "Unknown error")
+            errorResult
         }
     }
     
@@ -131,38 +202,60 @@ class FileExportManager(private val context: Context) {
      */
     suspend fun exportToCSV(expenses: List<Expense>): ExportResult = withContext(Dispatchers.IO) {
         try {
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            if (!downloadsDir.exists()) {
-                downloadsDir.mkdirs()
+            val csvContent = buildString {
+                // CSV Header
+                appendLine("Date,Title,Category,Amount,Description")
+
+                // CSV Data
+                expenses.sortedByDescending { it.date }.forEach { expense ->
+                    append("${expense.date.format(DateTimeFormatter.ISO_LOCAL_DATE)},")
+                    append("\"${expense.title.replace("\"", "\"\"")}\",")
+                    append("\"${expense.category.name}\",")
+                    append("${expense.amount},")
+                    appendLine("\"${expense.description.replace("\"", "\"\"")}\"")
+                }
             }
-            
-            val file = File(downloadsDir, "$BASE_FILENAME.csv")
-            val writer = FileWriter(file)
-            
-            // CSV Header
-            writer.append("Date,Title,Category,Amount,Description\n")
-            
-            // CSV Data
-            expenses.sortedByDescending { it.date }.forEach { expense ->
-                writer.append("${expense.date.format(DateTimeFormatter.ISO_LOCAL_DATE)},")
-                writer.append("\"${expense.title.replace("\"", "\"\"")}\",")
-                writer.append("\"${expense.category.name}\",")
-                writer.append("${expense.amount},")
-                writer.append("\"${expense.description.replace("\"", "\"\"")}\"\n")
+
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Use MediaStore for Android 10+
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, "$BASE_FILENAME.csv")
+                    put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                }
+
+                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                uri?.let { fileUri ->
+                    context.contentResolver.openOutputStream(fileUri)?.use { outputStream ->
+                        outputStream.write(csvContent.toByteArray())
+                    }
+                }
+                uri
+            } else {
+                // Use legacy file system for older Android versions
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadsDir.exists()) {
+                    downloadsDir.mkdirs()
+                }
+
+                val file = File(downloadsDir, "$BASE_FILENAME.csv")
+                file.writeText(csvContent)
+
+                FileProvider.getUriForFile(context, FILE_PROVIDER_AUTHORITY, file)
             }
-            
-            writer.close()
-            
-            val uri = FileProvider.getUriForFile(
-                context,
-                FILE_PROVIDER_AUTHORITY,
-                file
-            )
-            
-            ExportResult.Success(file.absolutePath, uri, "CSV")
-            
+
+            uri?.let { fileUri ->
+                val result = ExportResult.Success("Downloads/$BASE_FILENAME.csv", fileUri, "CSV")
+                // Show notification
+                notificationManager.showExportSuccessNotification("$BASE_FILENAME.csv", "CSV", fileUri)
+                result
+            } ?: ExportResult.Error("Failed to create CSV file")
+
         } catch (e: Exception) {
-            ExportResult.Error("Failed to export CSV: ${e.message}")
+            val errorResult = ExportResult.Error("Failed to export CSV: ${e.message}")
+            // Show error notification
+            notificationManager.showExportFailureNotification("$BASE_FILENAME.csv", e.message ?: "Unknown error")
+            errorResult
         }
     }
     
@@ -180,6 +273,79 @@ class FileExportManager(private val context: Context) {
         }
     }
     
+    /**
+     * Fallback method to create a simple text report if PDF fails
+     */
+    suspend fun exportToTextReport(expenses: List<Expense>): ExportResult = withContext(Dispatchers.IO) {
+        try {
+            val reportContent = buildString {
+                appendLine("EXPENSE REPORT")
+                appendLine("=".repeat(50))
+                appendLine()
+
+                val totalAmount = expenses.sumOf { it.amount }
+                val expenseCount = expenses.size
+
+                appendLine("SUMMARY")
+                appendLine("-".repeat(20))
+                appendLine("Total Expenses: $${String.format("%.2f", totalAmount)}")
+                appendLine("Number of Expenses: $expenseCount")
+                appendLine("Generated on: ${java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))}")
+                appendLine()
+
+                if (expenses.isNotEmpty()) {
+                    appendLine("EXPENSE DETAILS")
+                    appendLine("-".repeat(50))
+                    appendLine("Date\t\tTitle\t\tCategory\tAmount\tDescription")
+                    appendLine("-".repeat(50))
+
+                    expenses.sortedByDescending { it.date }.forEach { expense ->
+                        appendLine("${expense.date.format(DateTimeFormatter.ofPattern("MMM dd"))}\t\t${expense.title.take(15)}\t\t${expense.category.name}\t$${String.format("%.2f", expense.amount)}\t${expense.description.take(30)}")
+                    }
+                }
+            }
+
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, "$BASE_FILENAME.txt")
+                    put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                }
+
+                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                uri?.let { fileUri ->
+                    context.contentResolver.openOutputStream(fileUri)?.use { outputStream ->
+                        outputStream.write(reportContent.toByteArray())
+                    }
+                }
+                uri
+            } else {
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadsDir.exists()) {
+                    downloadsDir.mkdirs()
+                }
+
+                val file = File(downloadsDir, "$BASE_FILENAME.txt")
+                file.writeText(reportContent)
+
+                FileProvider.getUriForFile(context, FILE_PROVIDER_AUTHORITY, file)
+            }
+
+            uri?.let { fileUri ->
+                val result = ExportResult.Success("Downloads/$BASE_FILENAME.txt", fileUri, "TXT")
+                // Show notification
+                notificationManager.showExportSuccessNotification("$BASE_FILENAME.txt", "TXT", fileUri)
+                result
+            } ?: ExportResult.Error("Failed to create text report")
+
+        } catch (e: Exception) {
+            val errorResult = ExportResult.Error("Failed to export text report: ${e.message}")
+            // Show error notification
+            notificationManager.showExportFailureNotification("$BASE_FILENAME.txt", e.message ?: "Unknown error")
+            errorResult
+        }
+    }
+
     /**
      * Check if external storage is available for writing
      */

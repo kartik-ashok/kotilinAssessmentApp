@@ -143,7 +143,12 @@ class ExpenseRepository private constructor(private val context: Context) : IExp
      * Real PDF/CSV export generation using FileExportManager
      */
     suspend fun generateReportPDF(): ExportResult {
-        return fileExportManager.exportToPDF(_expenses.value)
+        return try {
+            fileExportManager.exportToPDF(_expenses.value)
+        } catch (e: Exception) {
+            // Fallback to text report if PDF fails
+            fileExportManager.exportToTextReport(_expenses.value)
+        }
     }
 
     suspend fun generateReportCSV(): ExportResult {

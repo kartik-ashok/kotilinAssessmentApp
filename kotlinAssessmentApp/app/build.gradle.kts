@@ -142,8 +142,8 @@ dependencies {
     // Coil for async image loading - REQUIRED for receipt image display
 
     // PDF Generation - ESSENTIAL for Report Export
-    implementation("com.itextpdf:itext7-core:7.2.5")
-    // iText 7 for PDF generation - REQUIRED for expense report PDF export
+    implementation("com.itextpdf:itextg:5.5.10")
+    // iText Android for PDF generation - REQUIRED for expense report PDF export
 
     // File Operations - ESSENTIAL for Export Functionality
     implementation("androidx.documentfile:documentfile:1.0.1")
