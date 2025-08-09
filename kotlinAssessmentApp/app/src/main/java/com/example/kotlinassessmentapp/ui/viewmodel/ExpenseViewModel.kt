@@ -322,7 +322,55 @@ class ExpenseViewModel(
             }
         }
     }
-    
+
+    suspend fun getExpenseById(expenseId: String): Expense? {
+        return try {
+            repository.getExpenseById(expenseId)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Failed to fetch expense: ${e.message}"
+            )
+            null
+        }
+    }
+
+    fun updateExpense(
+        expenseId: String,
+        title: String,
+        amount: Double,
+        category: Category,
+        description: String,
+        receiptImageUri: String? = null
+    ) {
+        viewModelScope.launch {
+            try {
+                val existingExpense = repository.getExpenseById(expenseId)
+                if (existingExpense != null) {
+                    val updatedExpense = existingExpense.copy(
+                        title = title,
+                        amount = amount,
+                        category = category,
+                        description = description,
+                        receiptImageUri = receiptImageUri
+                    )
+                    repository.updateExpense(updatedExpense)
+
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = null
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = "Expense not found"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to update expense: ${e.message}"
+                )
+            }
+        }
+    }
+
     fun searchExpenses(query: String) {
         _searchQuery.value = query.trim()
     }

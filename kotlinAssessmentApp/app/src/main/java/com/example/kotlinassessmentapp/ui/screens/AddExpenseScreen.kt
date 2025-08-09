@@ -68,14 +68,19 @@ import android.os.Build
 fun AddExpenseScreen(
     onBackClick: () -> Unit,
     onExpenseAdded: () -> Unit,
+    editExpenseId: String? = null,
     expenseViewModel: ExpenseViewModel = viewModel()
 ) {
+    // Determine if we're in edit mode
+    val isEditMode = editExpenseId != null
+
     // Form state
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var receiptImageUri by remember { mutableStateOf<Uri?>(null) }
+    var isLoadingExpense by remember { mutableStateOf(isEditMode) }
     
     // UI state
     var showError by remember { mutableStateOf(false) }
@@ -148,13 +153,46 @@ fun AddExpenseScreen(
     // Get today's total expenses - Reactive StateFlow (no manual refresh needed)
     val uiState by expenseViewModel.uiState.collectAsState()
     val todayExpenses by expenseViewModel.getTodaysTotalExpenses().collectAsState()
-    
+
+    // Load expense data for editing
+    LaunchedEffect(editExpenseId) {
+        if (editExpenseId != null) {
+            isLoadingExpense = true
+            try {
+                val expense = expenseViewModel.getExpenseById(editExpenseId)
+                expense?.let {
+                    title = it.title
+                    amount = it.amount.toString()
+                    notes = it.description
+                    selectedCategory = it.category
+                    receiptImageUri = it.receiptImageUri?.let { uri -> Uri.parse(uri) }
+                }
+            } catch (e: Exception) {
+                errorMessage = "Failed to load expense: ${e.message}"
+                showError = true
+            } finally {
+                isLoadingExpense = false
+            }
+        }
+    }
+
+    // Show loading state when loading expense for edit
+    if (isLoadingExpense) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     // Animation states
     val submitButtonScale by animateFloatAsState(
         targetValue = if (isSubmitting) 0.95f else 1f,
         animationSpec = tween(100)
     )
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -176,7 +214,7 @@ fun AddExpenseScreen(
             Spacer(modifier = Modifier.width(8.dp))
             
             Text(
-                text = "Add Expense",
+                text = if (isEditMode) "Edit Expense" else "Add Expense",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -429,21 +467,35 @@ fun AddExpenseScreen(
                         showError = false
                         isSubmitting = true
                         
-                        // Add expense to repository
-                        expenseViewModel.addExpense(
-                            title = title,
-                            amount = amount.toDouble(),
-                            category = selectedCategory!!,
-                            description = notes,
-                            receiptImageUri = receiptImageUri?.toString()
-                        )
-                        
+                        // Add or update expense
+                        if (isEditMode && editExpenseId != null) {
+                            // Update existing expense
+                            expenseViewModel.updateExpense(
+                                expenseId = editExpenseId,
+                                title = title,
+                                amount = amount.toDouble(),
+                                category = selectedCategory!!,
+                                description = notes,
+                                receiptImageUri = receiptImageUri?.toString()
+                            )
+                        } else {
+                            // Add new expense
+                            expenseViewModel.addExpense(
+                                title = title,
+                                amount = amount.toDouble(),
+                                category = selectedCategory!!,
+                                description = notes,
+                                receiptImageUri = receiptImageUri?.toString()
+                            )
+                        }
+
                         // Show success animation and toast
                         scope.launch {
                             showSuccessAnimation = true
-                            
-                            // Show Toast: "Expense Added"
-                            android.widget.Toast.makeText(context, "Expense Added", android.widget.Toast.LENGTH_SHORT).show()
+
+                            // Show Toast
+                            val message = if (isEditMode) "Expense Updated" else "Expense Added"
+                            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
                             
                             // Animate expense entry
                             delay(300)
@@ -468,10 +520,10 @@ fun AddExpenseScreen(
                     strokeWidth = 2.dp
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Adding...")
+                Text(if (isEditMode) "Updating..." else "Adding...")
             } else {
                 Text(
-                    text = "Submit",
+                    text = if (isEditMode) "Update Expense" else "Submit",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )

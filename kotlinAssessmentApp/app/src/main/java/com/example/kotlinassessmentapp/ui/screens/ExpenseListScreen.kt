@@ -169,6 +169,7 @@ fun ExpenseListScreen(
                     ExpenseItem(
                         expense = expense,
                         onDeleteClick = { expenseViewModel.deleteExpense(expense.id) },
+                        onItemClick = { onExpenseClick(expense.id) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -190,6 +191,7 @@ fun ExpenseListScreen(
                         ExpenseItem(
                             expense = expense,
                             onDeleteClick = { expenseViewModel.deleteExpense(expense.id) },
+                            onItemClick = { onExpenseClick(expense.id) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

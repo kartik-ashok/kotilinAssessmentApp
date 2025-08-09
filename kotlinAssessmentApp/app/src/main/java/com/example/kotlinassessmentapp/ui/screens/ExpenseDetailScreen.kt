@@ -19,6 +19,11 @@ import com.example.kotlinassessmentapp.ui.viewmodel.ExpenseViewModel
 import java.time.format.DateTimeFormatter
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 @OptIn(ExperimentalMaterial3Api::class)
 /**
@@ -39,9 +44,30 @@ fun ExpenseDetailScreen(
     expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val uiState by expenseViewModel.uiState.collectAsState()
-    val expense = uiState.expenses.find { it.id == expenseId }
-    
-    if (expense == null) {
+    var expense by remember { mutableStateOf<com.example.kotlinassessmentapp.data.model.Expense?>(null) }
+    var showImageDialog by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    // Fetch expense from database
+    LaunchedEffect(expenseId) {
+        expense = expenseViewModel.getExpenseById(expenseId)
+        isLoading = false
+    }
+
+    // Show loading state
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    // Get current expense value for smart cast
+    val currentExpense = expense
+    if (currentExpense == null) {
         // Handle expense not found
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -118,15 +144,15 @@ fun ExpenseDetailScreen(
                         modifier = Modifier
                             .size(60.dp)
                             .background(
-                                color = Color(expense.category.color).copy(alpha = 0.1f),
+                                color = Color(currentExpense.category.color).copy(alpha = 0.1f),
                                 shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = expense.category.icon,
-                            contentDescription = expense.category.name,
-                            tint = Color(expense.category.color),
+                            imageVector = currentExpense.category.icon,
+                            contentDescription = currentExpense.category.name,
+                            tint = Color(currentExpense.category.color),
                             modifier = Modifier.size(30.dp)
                         )
                     }
@@ -135,13 +161,13 @@ fun ExpenseDetailScreen(
                     
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = expense.category.name,
+                            text = currentExpense.category.name,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        
+
                         Text(
-                            text = "₹${String.format("%.2f", expense.amount)}",
+                            text = "₹${String.format("%.2f", currentExpense.amount)}",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -158,7 +184,7 @@ fun ExpenseDetailScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = expense.title,
+                    text = currentExpense.title,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = 4.dp)
@@ -173,29 +199,29 @@ fun ExpenseDetailScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = expense.date.format(DateTimeFormatter.ofPattern("EEEE, MMMM dd, yyyy 'at' HH:mm")),
+                    text = currentExpense.date.format(DateTimeFormatter.ofPattern("EEEE, MMMM dd, yyyy 'at' HH:mm")),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(top = 4.dp)
                 )
                 
                 // Description (if available)
-                if (expense.description.isNotBlank()) {
+                if (currentExpense.description.isNotBlank()) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Text(
                         text = "Notes",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = expense.description,
+                        text = currentExpense.description,
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
                 
                 // Receipt Image (if available)
-                expense.receiptImageUri?.let { imageUri ->
+                currentExpense.receiptImageUri?.let { imageUri ->
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
@@ -208,15 +234,36 @@ fun ExpenseDetailScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(200.dp)
-                            .padding(top = 8.dp),
+                            .padding(top = 8.dp)
+                            .clickable { showImageDialog = true },
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        AsyncImage(
-                            model = imageUri,
-                            contentDescription = "Receipt Image",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
+                        Box {
+                            AsyncImage(
+                                model = imageUri,
+                                contentDescription = "Receipt Image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+
+                            // Click hint overlay
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(8.dp)
+                                    .background(
+                                        Color.Black.copy(alpha = 0.6f),
+                                        RoundedCornerShape(16.dp)
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Tap to expand",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -259,6 +306,47 @@ fun ExpenseDetailScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Delete")
+            }
+        }
+    }
+
+    // Full-screen image dialog
+    if (showImageDialog && currentExpense.receiptImageUri != null) {
+        Dialog(
+            onDismissRequest = { showImageDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .clickable { showImageDialog = false },
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = currentExpense.receiptImageUri,
+                    contentDescription = "Receipt Image Full Screen",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+
+                // Close button
+                IconButton(
+                    onClick = { showImageDialog = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .background(
+                            Color.Black.copy(alpha = 0.5f),
+                            CircleShape
+                        )
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = Color.White
+                    )
+                }
             }
         }
     }

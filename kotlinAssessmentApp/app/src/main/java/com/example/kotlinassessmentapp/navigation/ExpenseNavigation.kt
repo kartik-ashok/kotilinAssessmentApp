@@ -31,6 +31,10 @@ import com.example.kotlinassessmentapp.ui.theme.ThemeViewModel
 sealed class ExpenseDestination(val route: String) {
     object Home : ExpenseDestination("home")
     object AddExpense : ExpenseDestination("add_expense")
+    object EditExpense : ExpenseDestination("edit_expense/{expenseId}") {
+        fun createRoute(expenseId: String): String = "edit_expense/$expenseId"
+        const val EXPENSE_ID_ARG = "expenseId"
+    }
     object ExpenseList : ExpenseDestination("expense_list") {
         // Optional arguments for filtering
         fun createRoute(
@@ -111,6 +115,11 @@ fun ExpenseNavGraph(
                 onViewReportsClick = {
                     navController.navigate(ExpenseDestination.ExpenseReport.route)
                 },
+                onExpenseClick = { expenseId ->
+                    navController.navigate(
+                        ExpenseDestination.ExpenseDetail.createRoute(expenseId)
+                    )
+                },
                 expenseViewModel = sharedExpenseViewModel,
                 themeViewModel = themeViewModel
             )
@@ -129,7 +138,30 @@ fun ExpenseNavGraph(
                 expenseViewModel = sharedExpenseViewModel
             )
         }
-        
+
+        // Edit Expense Screen
+        composable(
+            route = ExpenseDestination.EditExpense.route,
+            arguments = listOf(
+                navArgument(ExpenseDestination.EditExpense.EXPENSE_ID_ARG) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val expenseId = backStackEntry.arguments?.getString(ExpenseDestination.EditExpense.EXPENSE_ID_ARG)
+            AddExpenseScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onExpenseAdded = {
+                    // Navigate back after successful update
+                    navController.popBackStack()
+                },
+                editExpenseId = expenseId,
+                expenseViewModel = sharedExpenseViewModel
+            )
+        }
+
         // Expense List Screen with Optional Arguments
         composable(
             route = "${ExpenseDestination.ExpenseList.route}?dateFilter={dateFilter}&categoryId={categoryId}",
@@ -213,8 +245,8 @@ fun ExpenseNavGraph(
                     navController.popBackStack()
                 },
                 onEditClick = { id ->
-                    // Navigate to edit mode (could be AddExpenseScreen with edit mode)
-                    navController.navigate("${ExpenseDestination.AddExpense.route}?editId=$id")
+                    // Navigate to edit mode using EditExpense route
+                    navController.navigate(ExpenseDestination.EditExpense.createRoute(id))
                 },
                 expenseViewModel = sharedExpenseViewModel
             )

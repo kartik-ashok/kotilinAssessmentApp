@@ -42,6 +42,7 @@ fun HomeScreen(
     onAddExpenseClick: () -> Unit,
     onViewAllExpensesClick: () -> Unit = {},
     onViewReportsClick: () -> Unit = {},
+    onExpenseClick: (String) -> Unit = {},
     expenseViewModel: ExpenseViewModel = viewModel(),
     themeViewModel: com.example.kotlinassessmentapp.ui.theme.ThemeViewModel? = null
 ) {
@@ -191,6 +192,7 @@ fun HomeScreen(
                 ExpenseItem(
                     expense = expense,
                     onDeleteClick = { expenseViewModel.deleteExpense(expense.id) },
+                    onItemClick = { onExpenseClick(expense.id) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
