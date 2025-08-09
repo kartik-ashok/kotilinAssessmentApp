@@ -10,5 +10,6 @@ data class Expense(
     val category: Category,
     val description: String = "",
     val date: LocalDateTime = LocalDateTime.now(),
-    val isRecurring: Boolean = false
-) 
+    val isRecurring: Boolean = false,
+    val receiptImageUri: String? = null
+)

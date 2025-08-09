@@ -84,11 +84,28 @@ fun ExpenseItem(
                     )
                 }
                 
-                Text(
-                    text = expense.date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
+                // Date and Time
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = expense.date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+
+                    Text(
+                        text = expense.date.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.width(8.dp))
@@ -123,6 +140,5 @@ fun ExpenseItem(
 }
 
 private fun formatCurrency(amount: Double): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale.US)
-    return formatter.format(amount)
-} 
+    return "₹${String.format("%.2f", amount)}"
+}

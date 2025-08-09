@@ -133,6 +133,10 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     // Extended icon set - REQUIRED for category icons and UI elements
 
+    // Image Loading - ESSENTIAL for Receipt Images
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    // Coil for async image loading - REQUIRED for receipt image display
+
     // Theme Support - REQUIRED even for pure Compose apps
     implementation("com.google.android.material:material:1.12.0")
     // REASON: Needed for Android theme system and Activity themes

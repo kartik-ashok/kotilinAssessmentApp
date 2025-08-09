@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDateTime
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 /**
  * ExpenseRepository Implementation following Enterprise Patterns
  * 
@@ -131,7 +132,65 @@ class ExpenseRepository private constructor() : IExpenseRepository {
             )
         }
     }
-    
+
+    /**
+     * Export functionality for reports
+     * Simulates PDF/CSV export generation
+     */
+    fun generateReportCSV(): String {
+        val expenses = _expenses.value
+        val csvContent = buildString {
+            appendLine("Date,Title,Category,Amount,Description")
+            expenses.forEach { expense ->
+                appendLine(
+                    "${expense.date.format(DateTimeFormatter.ISO_LOCAL_DATE)}," +
+                    "\"${expense.title}\"," +
+                    "\"${expense.category.name}\"," +
+                    "${expense.amount}," +
+                    "\"${expense.description}\""
+                )
+            }
+        }
+
+        // Simulate file creation
+        val fileName = "expense_report_${System.currentTimeMillis()}.csv"
+        // In a real app, you would save this to internal storage or external storage
+        return fileName
+    }
+
+    fun generateReportPDF(): String {
+        // Simulate PDF generation
+        val fileName = "expense_report_${System.currentTimeMillis()}.pdf"
+        // In a real app, you would use a PDF library like iText or similar
+        return fileName
+    }
+
+    fun getShareableReportData(): String {
+        val expenses = _expenses.value
+        val totalAmount = expenses.sumOf { it.amount }
+        val expenseCount = expenses.size
+
+        return buildString {
+            appendLine("📊 Expense Report")
+            appendLine("================")
+            appendLine("Total Expenses: ₹${String.format("%.2f", totalAmount)}")
+            appendLine("Number of Expenses: $expenseCount")
+            appendLine()
+            appendLine("Category Breakdown:")
+
+            expenses.groupBy { it.category }
+                .mapValues { (_, expenses) -> expenses.sumOf { it.amount } }
+                .toList()
+                .sortedByDescending { it.second }
+                .forEach { (category, amount) ->
+                    appendLine("• ${category.name}: ₹${String.format("%.2f", amount)}")
+                }
+
+            appendLine()
+            appendLine("Generated on: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm"))}")
+        }
+    }
+
     companion object {
         @Volatile
         private var INSTANCE: ExpenseRepository? = null

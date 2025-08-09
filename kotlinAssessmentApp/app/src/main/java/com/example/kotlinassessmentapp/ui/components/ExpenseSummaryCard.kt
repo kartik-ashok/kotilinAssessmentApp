@@ -58,6 +58,5 @@ fun ExpenseSummaryCard(
 }
 
 private fun formatCurrency(amount: Double): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale.US)
-    return formatter.format(amount)
-} 
+    return "₹${String.format("%.2f", amount)}"
+}

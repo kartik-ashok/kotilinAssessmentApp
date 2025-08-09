@@ -8,12 +8,31 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.YearMonth
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+data class DailyExpenseData(
+    val date: LocalDate,
+    val totalAmount: Double,
+    val expenseCount: Int,
+    val formattedDate: String = date.format(DateTimeFormatter.ofPattern("MMM dd"))
+)
+
+data class CategoryExpenseData(
+    val category: Category,
+    val totalAmount: Double,
+    val percentage: Float,
+    val expenseCount: Int
+)
 
 data class ReportUiState(
     val currentReport: Report? = null,
     val expensesByCategory: List<ExpensesByCategory> = emptyList(),
     val monthlyTrends: List<MonthlyExpenseTrend> = emptyList(),
+    val dailyExpenses: List<DailyExpenseData> = emptyList(),
+    val categoryExpenses: List<CategoryExpenseData> = emptyList(),
     val selectedPeriod: YearMonth = YearMonth.now(),
+    val last7DaysTotal: Double = 0.0,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
@@ -53,13 +72,22 @@ class ReportViewModel(
                     repository.expenses.map { expenses ->
                         generateMonthlyTrends(expenses)
                     },
+                    repository.expenses.map { expenses ->
+                        generateLast7DaysData(expenses)
+                    },
+                    repository.expenses.map { expenses ->
+                        generateCategoryData(expenses)
+                    },
                     _selectedPeriod
-                ) { report, expensesByCategory, monthlyTrends, period ->
+                ) { report, expensesByCategory, monthlyTrends, dailyData, categoryData, period ->
                     ReportUiState(
                         currentReport = report,
                         expensesByCategory = expensesByCategory,
                         monthlyTrends = monthlyTrends,
+                        dailyExpenses = dailyData,
+                        categoryExpenses = categoryData,
                         selectedPeriod = period,
+                        last7DaysTotal = dailyData.sumOf { it.totalAmount },
                         isLoading = false
                     )
                 }.collect { state ->
@@ -137,4 +165,53 @@ class ReportViewModel(
             initialValue = emptyList()
         )
     }
-} 
+
+    private fun generateLast7DaysData(expenses: List<Expense>): List<DailyExpenseData> {
+        val today = LocalDate.now()
+        val last7Days = (6 downTo 0).map { today.minusDays(it.toLong()) }
+
+        return last7Days.map { date ->
+            val dayExpenses = expenses.filter { expense ->
+                expense.date.toLocalDate() == date
+            }
+
+            DailyExpenseData(
+                date = date,
+                totalAmount = dayExpenses.sumOf { it.amount },
+                expenseCount = dayExpenses.size
+            )
+        }
+    }
+
+    private fun generateCategoryData(expenses: List<Expense>): List<CategoryExpenseData> {
+        val today = LocalDate.now()
+        val last7DaysExpenses = expenses.filter { expense ->
+            val expenseDate = expense.date.toLocalDate()
+            expenseDate >= today.minusDays(6) && expenseDate <= today
+        }
+
+        val totalAmount = last7DaysExpenses.sumOf { it.amount }
+
+        return last7DaysExpenses
+            .groupBy { it.category }
+            .map { (category, categoryExpenses) ->
+                val categoryTotal = categoryExpenses.sumOf { it.amount }
+                CategoryExpenseData(
+                    category = category,
+                    totalAmount = categoryTotal,
+                    percentage = if (totalAmount > 0) (categoryTotal / totalAmount * 100).toFloat() else 0f,
+                    expenseCount = categoryExpenses.size
+                )
+            }
+            .sortedByDescending { it.totalAmount }
+    }
+
+    fun exportReport(format: String): String {
+        // Simulate export functionality
+        return when (format.lowercase()) {
+            "pdf" -> "report_${System.currentTimeMillis()}.pdf"
+            "csv" -> "report_${System.currentTimeMillis()}.csv"
+            else -> "report_${System.currentTimeMillis()}.txt"
+        }
+    }
+}

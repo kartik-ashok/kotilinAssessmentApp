@@ -7,6 +7,28 @@ import com.example.kotlinassessmentapp.data.repository.ExpenseRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.time.LocalDate
+import java.time.YearMonth
+
+/**
+ * Grouping options for expense list
+ */
+enum class GroupBy {
+    NONE,
+    CATEGORY,
+    TIME
+}
+
+/**
+ * Date filter options
+ */
+enum class DateFilter {
+    TODAY,
+    THIS_WEEK,
+    THIS_MONTH,
+    CUSTOM_RANGE,
+    ALL_TIME
+}
 import java.time.YearMonth
 
 /**
@@ -29,7 +51,13 @@ data class ExpenseUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val selectedCategory: Category? = null,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val groupBy: GroupBy = GroupBy.NONE,
+    val dateFilter: DateFilter = DateFilter.TODAY,
+    val customStartDate: LocalDate? = null,
+    val customEndDate: LocalDate? = null,
+    val groupedExpenses: Map<String, List<Expense>> = emptyMap(),
+    val expenseCount: Int = 0
 )
 
 /**
@@ -58,6 +86,10 @@ class ExpenseViewModel(
     
     private val _searchQuery = MutableStateFlow("")
     private val _selectedCategory = MutableStateFlow<Category?>(null)
+    private val _groupBy = MutableStateFlow(GroupBy.NONE)
+    private val _dateFilter = MutableStateFlow(DateFilter.TODAY)
+    private val _customStartDate = MutableStateFlow<LocalDate?>(null)
+    private val _customEndDate = MutableStateFlow<LocalDate?>(null)
     
     init {
         loadExpenses()
@@ -66,16 +98,20 @@ class ExpenseViewModel(
     private fun loadExpenses() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            
+
             try {
                 combine(
                     repository.expenses,
                     repository.getTotalExpenses(),
                     _searchQuery,
-                    _selectedCategory
-                ) { expenses, total, query, category ->
+                    _selectedCategory,
+                    _groupBy,
+                    _dateFilter,
+                    _customStartDate,
+                    _customEndDate
+                ) { expenses, total, query, category, groupBy, dateFilter, startDate, endDate ->
                     var filteredExpenses = expenses
-                    
+
                     // Apply search filter
                     if (query.isNotBlank()) {
                         filteredExpenses = filteredExpenses.filter { expense ->
@@ -83,20 +119,35 @@ class ExpenseViewModel(
                             expense.description.contains(query, ignoreCase = true)
                         }
                     }
-                    
+
                     // Apply category filter
                     if (category != null) {
                         filteredExpenses = filteredExpenses.filter { expense ->
                             expense.category.id == category.id
                         }
                     }
-                    
+
+                    // Apply date filter
+                    filteredExpenses = applyDateFilter(filteredExpenses, dateFilter, startDate, endDate)
+
+                    // Sort expenses
+                    val sortedExpenses = filteredExpenses.sortedByDescending { it.date }
+
+                    // Apply grouping
+                    val groupedExpenses = applyGrouping(sortedExpenses, groupBy)
+
                     ExpenseUiState(
-                        expenses = filteredExpenses.sortedByDescending { it.date },
-                        totalAmount = total,
+                        expenses = sortedExpenses,
+                        totalAmount = filteredExpenses.sumOf { it.amount },
                         isLoading = false,
                         searchQuery = query,
-                        selectedCategory = category
+                        selectedCategory = category,
+                        groupBy = groupBy,
+                        dateFilter = dateFilter,
+                        customStartDate = startDate,
+                        customEndDate = endDate,
+                        groupedExpenses = groupedExpenses,
+                        expenseCount = filteredExpenses.size
                     )
                 }.collect { state ->
                     _uiState.value = state
@@ -114,7 +165,8 @@ class ExpenseViewModel(
         title: String,
         amount: Double,
         category: Category,
-        description: String = ""
+        description: String = "",
+        receiptImageUri: String? = null
     ) {
         viewModelScope.launch {
             try {
@@ -123,7 +175,8 @@ class ExpenseViewModel(
                     amount = amount,
                     category = category,
                     description = description,
-                    date = LocalDateTime.now()
+                    date = LocalDateTime.now(),
+                    receiptImageUri = receiptImageUri
                 )
                 repository.addExpense(expense)
             } catch (e: Exception) {
@@ -159,7 +212,23 @@ class ExpenseViewModel(
     fun filterByCategory(category: Category?) {
         _selectedCategory.value = category
     }
-    
+
+    fun setGroupBy(groupBy: GroupBy) {
+        _groupBy.value = groupBy
+    }
+
+    fun setDateFilter(dateFilter: DateFilter) {
+        _dateFilter.value = dateFilter
+    }
+
+    fun setCustomDateRange(startDate: LocalDate?, endDate: LocalDate?) {
+        _customStartDate.value = startDate
+        _customEndDate.value = endDate
+        if (startDate != null && endDate != null) {
+            _dateFilter.value = DateFilter.CUSTOM_RANGE
+        }
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
@@ -173,4 +242,85 @@ class ExpenseViewModel(
             initialValue = emptyMap()
         )
     }
-} 
+
+    /**
+     * Reactive StateFlow for Today's Total Expenses
+     * Automatically updates when expenses change - no manual refresh needed
+     */
+    fun getTodaysTotalExpenses(): StateFlow<Double> {
+        return repository.expenses.map { expenses ->
+            val today = LocalDate.now()
+            expenses.filter { expense ->
+                expense.date.toLocalDate() == today
+            }.sumOf { it.amount }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.0
+        )
+    }
+
+    /**
+     * Reactive StateFlow for Today's Expense Count
+     * Automatically updates when expenses change - no manual refresh needed
+     */
+    fun getTodaysExpenseCount(): StateFlow<Int> {
+        return repository.expenses.map { expenses ->
+            val today = LocalDate.now()
+            expenses.count { expense ->
+                expense.date.toLocalDate() == today
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0
+        )
+    }
+
+    private fun applyDateFilter(
+        expenses: List<Expense>,
+        dateFilter: DateFilter,
+        startDate: LocalDate?,
+        endDate: LocalDate?
+    ): List<Expense> {
+        val today = LocalDate.now()
+        return when (dateFilter) {
+            DateFilter.TODAY -> expenses.filter { it.date.toLocalDate() == today }
+            DateFilter.THIS_WEEK -> {
+                val startOfWeek = today.minusDays(today.dayOfWeek.value - 1L)
+                val endOfWeek = startOfWeek.plusDays(6)
+                expenses.filter {
+                    val expenseDate = it.date.toLocalDate()
+                    expenseDate >= startOfWeek && expenseDate <= endOfWeek
+                }
+            }
+            DateFilter.THIS_MONTH -> {
+                val startOfMonth = today.withDayOfMonth(1)
+                val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
+                expenses.filter {
+                    val expenseDate = it.date.toLocalDate()
+                    expenseDate >= startOfMonth && expenseDate <= endOfMonth
+                }
+            }
+            DateFilter.CUSTOM_RANGE -> {
+                if (startDate != null && endDate != null) {
+                    expenses.filter {
+                        val expenseDate = it.date.toLocalDate()
+                        expenseDate >= startDate && expenseDate <= endDate
+                    }
+                } else expenses
+            }
+            DateFilter.ALL_TIME -> expenses
+        }
+    }
+
+    private fun applyGrouping(expenses: List<Expense>, groupBy: GroupBy): Map<String, List<Expense>> {
+        return when (groupBy) {
+            GroupBy.CATEGORY -> expenses.groupBy { it.category.name }
+            GroupBy.TIME -> expenses.groupBy {
+                it.date.toLocalDate().toString() // Group by date
+            }
+            GroupBy.NONE -> mapOf("All Expenses" to expenses)
+        }
+    }
+}
