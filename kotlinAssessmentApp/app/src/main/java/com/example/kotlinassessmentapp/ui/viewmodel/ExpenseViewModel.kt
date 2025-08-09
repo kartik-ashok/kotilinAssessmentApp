@@ -225,7 +225,8 @@ class ExpenseViewModel(
         amount: Double,
         category: Category,
         description: String = "",
-        receiptImageUri: String? = null
+        receiptImageUri: String? = null,
+        date: LocalDateTime = LocalDateTime.now()
     ) {
         viewModelScope.launch {
             try {
@@ -253,7 +254,7 @@ class ExpenseViewModel(
                     amount = amount,
                     category = category,
                     description = description.trim(),
-                    date = LocalDateTime.now(),
+                    date = date,
                     receiptImageUri = receiptImageUri
                 )
                 repository.addExpense(expense)

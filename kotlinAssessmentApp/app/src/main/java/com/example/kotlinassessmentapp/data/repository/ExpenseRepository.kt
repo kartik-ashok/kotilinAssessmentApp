@@ -40,51 +40,7 @@ class ExpenseRepository private constructor(private val context: Context) : IExp
 
     override val expenses: Flow<List<Expense>> = expenseDao.getAllExpenses()
     
-    // Initialize with sample data on first run
-    init {
-        CoroutineScope(Dispatchers.IO).launch {
-            initializeSampleData()
-        }
-    }
-
-    private suspend fun initializeSampleData() {
-        try {
-            // Check if database is empty and add sample data
-            val currentExpenses = expenseDao.getAllExpenses()
-            currentExpenses.collect { expenseList ->
-                if (expenseList.isEmpty()) {
-                    val sampleExpenses = listOf(
-                        Expense(
-                            title = "Lunch at Restaurant",
-                            amount = 25.50,
-                            category = Categories.FOOD,
-                            description = "Lunch with colleagues",
-                            date = LocalDateTime.now().minusDays(1)
-                        ),
-                        Expense(
-                            title = "Gas Station",
-                            amount = 45.00,
-                            category = Categories.TRAVEL,
-                            description = "Weekly fuel",
-                            date = LocalDateTime.now().minusDays(2)
-                        ),
-                        Expense(
-                            title = "Grocery Shopping",
-                            amount = 85.30,
-                            category = Categories.FOOD,
-                            description = "Weekly groceries",
-                            date = LocalDateTime.now().minusDays(3)
-                        )
-                    )
-                    expenseDao.insertExpenses(sampleExpenses)
-                }
-                return@collect // Exit after first emission
-            }
-        } catch (e: Exception) {
-            // Handle initialization error gracefully
-            android.util.Log.e("ExpenseRepository", "Failed to initialize sample data", e)
-        }
-    }
+    // Repository initialized - clean start without dummy data
     
     override suspend fun addExpense(expense: Expense) {
         expenseDao.insertExpense(expense)
@@ -185,6 +141,7 @@ class ExpenseRepository private constructor(private val context: Context) : IExp
     fun createShareIntent(pdfResult: ExportResult.Success): android.content.Intent {
         return fileExportManager.createShareIntent(pdfResult.uri)
     }
+
 
     suspend fun getShareableReportData(): String {
         val expenses = getCurrentExpensesList()

@@ -21,6 +21,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kotlinassessmentapp.data.model.Expense
 import com.example.kotlinassessmentapp.ui.components.ExpenseItem
 import com.example.kotlinassessmentapp.ui.components.ExpenseSummaryCard
+import com.example.kotlinassessmentapp.ui.components.ExpensePieChart
+import com.example.kotlinassessmentapp.ui.components.generatePieChartData
 import com.example.kotlinassessmentapp.ui.viewmodel.ExpenseViewModel
 import java.time.format.DateTimeFormatter
 
@@ -182,7 +184,17 @@ fun HomeScreen(
                 )
             }
         }
-        
+
+        // Pie Chart for Category Breakdown
+        if (uiState.expenses.isNotEmpty()) {
+            ExpensePieChart(
+                data = generatePieChartData(uiState.expenses),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            )
+        }
+
         // Expenses List
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),

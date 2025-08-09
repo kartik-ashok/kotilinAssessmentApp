@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kotlinassessmentapp.data.model.Categories
@@ -81,6 +82,8 @@ fun AddExpenseScreen(
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var receiptImageUri by remember { mutableStateOf<Uri?>(null) }
     var isLoadingExpense by remember { mutableStateOf(isEditMode) }
+    var selectedDate by remember { mutableStateOf(LocalDateTime.now()) }
+    var showDatePicker by remember { mutableStateOf(false) }
     
     // UI state
     var showError by remember { mutableStateOf(false) }
@@ -187,10 +190,26 @@ fun AddExpenseScreen(
         return
     }
 
-    // Animation states
+    // Enhanced Animation states
     val submitButtonScale by animateFloatAsState(
         targetValue = if (isSubmitting) 0.95f else 1f,
-        animationSpec = tween(100)
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+
+    val formAlpha by animateFloatAsState(
+        targetValue = if (isLoadingExpense) 0.5f else 1f,
+        animationSpec = tween(300)
+    )
+
+    val successScale by animateFloatAsState(
+        targetValue = if (showSuccessAnimation) 1.2f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        )
     )
 
     Column(
@@ -198,6 +217,8 @@ fun AddExpenseScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
+            .graphicsLayer(alpha = formAlpha)
+            .animateContentSize()
     ) {
         // Top Bar
         Row(
@@ -337,9 +358,35 @@ fun AddExpenseScreen(
                 modifier = Modifier.padding(start = 16.dp, top = 4.dp)
             )
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
+        // Date Selection
+        Text(
+            text = "Date",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedButton(
+            onClick = { showDatePicker = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                Icons.Default.DateRange,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"))
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         // Receipt Image (Optional → Upload/Mock image)
         Text(
             text = "Receipt Image (Optional)",
@@ -485,7 +532,8 @@ fun AddExpenseScreen(
                                 amount = amount.toDouble(),
                                 category = selectedCategory!!,
                                 description = notes,
-                                receiptImageUri = receiptImageUri?.toString()
+                                receiptImageUri = receiptImageUri?.toString(),
+                                date = selectedDate
                             )
                         }
 
@@ -694,4 +742,56 @@ private fun CategoryItem(
             )
         }
     }
-} 
+
+/*
+*    // Date Picker Dialog
+    if (showDatePicker) {
+        AlertDialog(
+            onDismissRequest = { showDatePicker = false },
+            title = { Text("Select Date") },
+            text = {
+                Column {
+                    Text("Choose the date for this expense:")
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Simple date selection buttons for last 7 days
+                    val today = LocalDateTime.now()
+                    repeat(7) { dayOffset ->
+                        val date = today.minusDays(dayOffset.toLong())
+                        val isSelected = selectedDate.toLocalDate() == date.toLocalDate()
+
+                        OutlinedButton(
+                            onClick = {
+                                selectedDate = date
+                                showDatePicker = false
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                            )
+                        ) {
+                            Text(
+                                text = when (dayOffset) {
+                                    0 -> "Today - ${date.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd"))}"
+                                    1 -> "Yesterday - ${date.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd"))}"
+                                    else -> date.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMM dd"))
+                                }
+                            )
+                        }
+
+                        if (dayOffset < 6) Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Done")
+                }
+            }
+        )
+    }
+* */
+}
+
+
+
