@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kotlinassessmentapp.data.model.*
 import com.example.kotlinassessmentapp.data.repository.ExpenseRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.YearMonth
@@ -17,6 +18,13 @@ data class ReportUiState(
     val errorMessage: String? = null
 )
 
+/**
+ * ReportViewModel following Enterprise MVVM Pattern
+ * 
+ * TEMPORARILY using direct repository access until Hilt compatibility is resolved
+ * This follows the same enterprise patterns as ExpenseViewModel
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ReportViewModel(
     private val repository: ExpenseRepository = ExpenseRepository.getInstance()
 ) : ViewModel() {

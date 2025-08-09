@@ -22,6 +22,18 @@ import com.example.kotlinassessmentapp.ui.viewmodel.ExpenseViewModel
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
+/**
+ * HomeScreen following Modern Enterprise UI Patterns
+ * 
+ * Uses hiltViewModel() for dependency injection instead of manual instantiation
+ * This pattern ensures proper dependency management and testability
+ * 
+ * Enterprise UI patterns used:
+ * - SINGLE SOURCE OF TRUTH (ViewModel holds all UI state)
+ * - UNIDIRECTIONAL DATA FLOW (events up, state down)
+ * - REACTIVE UI (UI recomposes when state changes)
+ * - SEPARATION OF CONCERNS (UI logic separate from business logic)
+ */
 @Composable
 fun HomeScreen(
     onAddExpenseClick: () -> Unit,

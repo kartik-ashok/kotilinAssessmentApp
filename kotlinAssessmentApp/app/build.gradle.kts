@@ -2,6 +2,11 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    
+    // TEMPORARILY DISABLED - Dependency Injection with Hilt
+    // Will be re-enabled once version compatibility is resolved
+    // id("com.google.dagger.hilt.android") version "2.50"
+    // id("com.google.devtools.ksp") version "2.0.21-1.0.25"
 
 }
 
@@ -48,83 +53,103 @@ android {
 
 dependencies {
 
-    // Core Android Libraries
+    // Core Android Libraries - ESSENTIAL
     implementation(libs.androidx.core.ktx)
-    // Provides Kotlin extensions for Android core APIs, making code more concise and idiomatic
+    // Kotlin extensions for Android APIs - REQUIRED for modern Android development
 
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    // Provides lifecycle-aware components and Kotlin coroutines support for managing app lifecycle
+    // Lifecycle-aware components with coroutines - REQUIRED for MVVM pattern
 
     implementation(libs.androidx.activity.compose)
-    // Enables integration between Activity and Jetpack Compose, provides setContent {} function
+    // Activity-Compose integration - REQUIRED for Compose apps
 
-    // Jetpack Compose BOM (Bill of Materials)
+    // Jetpack Compose BOM - ESSENTIAL
     implementation(platform(libs.androidx.compose.bom))
-    // Ensures all Compose libraries use compatible versions, prevents version conflicts
+    // Version alignment for all Compose libraries - PREVENTS dependency conflicts
 
-    // Core Compose UI Libraries
+    // Core Compose UI Libraries - ESSENTIAL
     implementation(libs.androidx.ui)
-    // Core Compose UI toolkit for building user interfaces declaratively
+    // Core Compose UI toolkit - REQUIRED for declarative UI
 
     implementation(libs.androidx.ui.graphics)
-    // Provides graphics primitives and utilities for Compose (Canvas, Paint, etc.)
+    // Graphics primitives - NEEDED for custom icons and drawing
 
     implementation(libs.androidx.ui.tooling.preview)
-    // Enables @Preview annotations for previewing Composables in Android Studio
+    // @Preview support - ESSENTIAL for development productivity
 
     implementation(libs.androidx.material3)
-    // Material Design 3 components for Compose (buttons, cards, text fields, etc.)
+    // Material 3 components - REQUIRED for modern UI design
 
-    // MVVM Architecture Dependencies
+    // MVVM Architecture Dependencies - ESSENTIAL for Enterprise Pattern
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
-    // Integrates ViewModel with Compose, provides viewModel() function and lifecycle-aware state
+    // ViewModel-Compose integration - REQUIRED for MVVM with Compose
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1")
-    // Provides ViewModel with Kotlin coroutines support (viewModelScope)
+    // ViewModel with coroutines - REQUIRED for async operations in ViewModels
 
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.1")
-    // Enables lifecycle-aware state management in Compose (collectAsStateWithLifecycle)
+    // Lifecycle-aware Compose state - REQUIRED for reactive UI updates
 
-    // Testing Dependencies
+    // TEMPORARILY DISABLED - Dependency Injection with Hilt
+    // These will be re-enabled once version compatibility is resolved
+    // implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    // implementation("com.google.dagger:hilt-android:2.50")
+    // ksp("com.google.dagger:hilt-compiler:2.50")
+    
+    // Testing Dependencies - ESSENTIAL for Quality Assurance
     testImplementation(libs.junit)
-    // Unit testing framework for testing business logic and ViewModels
+    // Unit testing - REQUIRED for TDD/BDD practices
+
+    testImplementation("org.mockito:mockito-core:5.7.0")
+    // Mocking framework - REQUIRED for isolated unit tests
+
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    // Coroutines testing - REQUIRED for testing async code
 
     androidTestImplementation(libs.androidx.junit)
-    // AndroidX version of JUnit for instrumented tests that run on device/emulator
+    // Android JUnit - REQUIRED for instrumented tests
 
     androidTestImplementation(libs.androidx.espresso.core)
-    // UI testing framework for testing user interactions and UI behavior
+    // UI testing framework - REQUIRED for E2E testing
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
-    // Ensures test dependencies use same Compose versions as main code
+    // Test version alignment - PREVENTS test dependency conflicts
 
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    // Testing utilities for Compose UI components (onNodeWithText, performClick, etc.)
+    // Compose UI testing - REQUIRED for Compose component testing
 
-    // Debug-only Dependencies
+    // Debug Tools - DEVELOPMENT PRODUCTIVITY
     debugImplementation(libs.androidx.ui.tooling)
-    // Provides debugging tools for Compose (layout inspector, recomposition counts)
+    // Compose debugging tools - ESSENTIAL for development
 
     debugImplementation(libs.androidx.ui.test.manifest)
-    // Enables testing of Compose UI components in debug builds
+    // Test manifest for debug builds - REQUIRED for UI testing
 
-    // Additional UI and UX Libraries
-    implementation("androidx.core:core-splashscreen:1.0.0")
-    // Provides modern splash screen API following Android 12+ guidelines
-
-    implementation("com.google.android.material:material:1.12.0")
-    // Material Design components for traditional Android Views (used for theme colors)
-
+    // Navigation - ESSENTIAL for Multi-Screen Apps
     implementation("androidx.navigation:navigation-compose:2.7.5")
-    // Navigation component for Compose, enables screen-to-screen navigation with type safety
+    // Type-safe navigation - REQUIRED for screen navigation
 
-    implementation("androidx.compose.ui:ui-text-google-fonts:1.8.1")
-    // Provides Google Fonts integration for Compose text (downloadable fonts)
-
+    // Icons - ESSENTIAL for User Experience
     implementation("androidx.compose.material:material-icons-extended")
-    // Extended set of Material Design icons for Compose (beyond the core set)
+    // Extended icon set - REQUIRED for category icons and UI elements
 
-    implementation("androidx.compose.material3:material3:1.2.0")
-    // Additional Material 3 components and theming capabilities (explicit version for consistency)
+    // Theme Support - REQUIRED even for pure Compose apps
+    implementation("com.google.android.material:material:1.12.0")
+    // REASON: Needed for Android theme system and Activity themes
+    // NOTE: Even pure Compose apps need this for proper theme inheritance
+    // ENTERPRISE PATTERN: All major apps include this for theme compatibility
+
+    // COMMENTED OUT - UNNECESSARY DEPENDENCIES
+    // implementation("androidx.core:core-splashscreen:1.0.0")
+    // REASON: Not needed for basic expense tracker, adds unnecessary complexity
+    // ALTERNATIVE: Use simple Compose splash screen if needed
+
+    // implementation("androidx.compose.ui:ui-text-google-fonts:1.8.1")
+    // REASON: Default system fonts are sufficient for MVP, adds download overhead
+    // ALTERNATIVE: Use system fonts or add later if custom fonts are required
+
+    // implementation("androidx.compose.material3:material3:1.2.0")
+    // REASON: Duplicate dependency - already included via libs.androidx.material3
+    // ALTERNATIVE: Use the BOM-managed version for consistency
 
 }
