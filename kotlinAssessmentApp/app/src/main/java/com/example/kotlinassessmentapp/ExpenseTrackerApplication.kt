@@ -1,6 +1,7 @@
 package com.example.kotlinassessmentapp
 
 import android.app.Application
+import com.example.kotlinassessmentapp.data.database.ExpenseDatabase
 import com.example.kotlinassessmentapp.data.repository.ExpenseRepository
 
 /**
@@ -19,6 +20,9 @@ class ExpenseTrackerApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
+
+        // Initialize Room database
+        ExpenseDatabase.getDatabase(this)
 
         // Initialize repository with application context
         ExpenseRepository.getInstance(this)

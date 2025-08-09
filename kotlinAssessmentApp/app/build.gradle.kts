@@ -2,7 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    
+    id("kotlin-kapt")
+
     // TEMPORARILY DISABLED - Dependency Injection with Hilt
     // Will be re-enabled once version compatibility is resolved
     // id("com.google.dagger.hilt.android") version "2.50"
@@ -148,6 +149,12 @@ dependencies {
     // File Operations - ESSENTIAL for Export Functionality
     implementation("androidx.documentfile:documentfile:1.0.1")
     // Document file API - REQUIRED for file management and sharing
+
+    // Room Database - ESSENTIAL for Local Data Storage
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+    // Room for local database - REQUIRED for persistent data storage
 
     // Theme Support - REQUIRED even for pure Compose apps
     implementation("com.google.android.material:material:1.12.0")

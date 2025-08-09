@@ -43,7 +43,7 @@ interface IExpenseRepository {
     /**
      * Query Operations for business logic
      */
-    fun getExpenseById(id: String): Expense?
+    suspend fun getExpenseById(id: String): Expense?
     fun getExpensesByCategory(category: Category): Flow<List<Expense>>
     fun getExpensesByDateRange(startDate: LocalDateTime, endDate: LocalDateTime): Flow<List<Expense>>
     

@@ -1,14 +1,17 @@
 package com.example.kotlinassessmentapp.data.repository
 
 import android.content.Context
+import com.example.kotlinassessmentapp.data.dao.ExpenseDao
+import com.example.kotlinassessmentapp.data.database.ExpenseDatabase
 import com.example.kotlinassessmentapp.data.model.*
 import com.example.kotlinassessmentapp.domain.repository.IExpenseRepository
 import com.example.kotlinassessmentapp.utils.FileExportManager
 import com.example.kotlinassessmentapp.utils.ExportResult
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -31,95 +34,97 @@ import java.time.format.DateTimeFormatter
  */
 class ExpenseRepository private constructor(private val context: Context) : IExpenseRepository {
 
-    private val _expenses = MutableStateFlow<List<Expense>>(emptyList())
-    override val expenses: Flow<List<Expense>> = _expenses.asStateFlow()
-
+    private val database = ExpenseDatabase.getDatabase(context)
+    private val expenseDao = database.expenseDao()
     private val fileExportManager = FileExportManager(context)
+
+    override val expenses: Flow<List<Expense>> = expenseDao.getAllExpenses()
     
-    // Sample data for demonstration
+    // Initialize with sample data on first run
     init {
-        _expenses.value = listOf(
-            Expense(
-                title = "Lunch at Restaurant",
-                amount = 25.50,
-                category = Categories.FOOD,
-                description = "Lunch with colleagues",
-                date = LocalDateTime.now().minusDays(1)
-            ),
-            Expense(
-                title = "Gas Station",
-                amount = 45.00,
-                category = Categories.TRAVEL,
-                description = "Weekly fuel",
-                date = LocalDateTime.now().minusDays(2)
-            ),
-            Expense(
-                title = "Grocery Shopping",
-                amount = 85.30,
-                category = Categories.FOOD,
-                description = "Weekly groceries",
-                date = LocalDateTime.now().minusDays(3)
-            )
-        )
+        CoroutineScope(Dispatchers.IO).launch {
+            initializeSampleData()
+        }
+    }
+
+    private suspend fun initializeSampleData() {
+        try {
+            // Check if database is empty and add sample data
+            val currentExpenses = expenseDao.getAllExpenses()
+            currentExpenses.collect { expenseList ->
+                if (expenseList.isEmpty()) {
+                    val sampleExpenses = listOf(
+                        Expense(
+                            title = "Lunch at Restaurant",
+                            amount = 25.50,
+                            category = Categories.FOOD,
+                            description = "Lunch with colleagues",
+                            date = LocalDateTime.now().minusDays(1)
+                        ),
+                        Expense(
+                            title = "Gas Station",
+                            amount = 45.00,
+                            category = Categories.TRAVEL,
+                            description = "Weekly fuel",
+                            date = LocalDateTime.now().minusDays(2)
+                        ),
+                        Expense(
+                            title = "Grocery Shopping",
+                            amount = 85.30,
+                            category = Categories.FOOD,
+                            description = "Weekly groceries",
+                            date = LocalDateTime.now().minusDays(3)
+                        )
+                    )
+                    expenseDao.insertExpenses(sampleExpenses)
+                }
+                return@collect // Exit after first emission
+            }
+        } catch (e: Exception) {
+            // Handle initialization error gracefully
+            android.util.Log.e("ExpenseRepository", "Failed to initialize sample data", e)
+        }
     }
     
     override suspend fun addExpense(expense: Expense) {
-        val currentExpenses = _expenses.value.toMutableList()
-        currentExpenses.add(expense)
-        _expenses.value = currentExpenses
+        expenseDao.insertExpense(expense)
     }
-    
+
     override suspend fun updateExpense(expense: Expense) {
-        val currentExpenses = _expenses.value.toMutableList()
-        val index = currentExpenses.indexOfFirst { it.id == expense.id }
-        if (index != -1) {
-            currentExpenses[index] = expense
-            _expenses.value = currentExpenses
-        }
+        expenseDao.updateExpense(expense)
     }
-    
+
     override suspend fun deleteExpense(expenseId: String) {
-        val currentExpenses = _expenses.value.toMutableList()
-        currentExpenses.removeAll { it.id == expenseId }
-        _expenses.value = currentExpenses
+        expenseDao.deleteExpenseById(expenseId)
     }
     
-    override fun getExpenseById(id: String): Expense? {
-        return _expenses.value.find { it.id == id }
+    override suspend fun getExpenseById(id: String): Expense? {
+        return expenseDao.getExpenseById(id)
     }
-    
+
     override fun getExpensesByCategory(category: Category): Flow<List<Expense>> {
-        return expenses.map { list -> 
-            list.filter { it.category.id == category.id }
-        }
+        return expenseDao.getExpensesByCategory(category.name)
     }
-    
+
     override fun getExpensesByDateRange(startDate: LocalDateTime, endDate: LocalDateTime): Flow<List<Expense>> {
-        return expenses.map { list ->
-            list.filter { expense ->
-                !expense.date.isBefore(startDate) && !expense.date.isAfter(endDate)
-            }
-        }
+        val startDateStr = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        val endDateStr = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        return expenseDao.getExpensesByDateRange(startDateStr, endDateStr)
     }
-    
+
     override fun getTotalExpenses(): Flow<Double> {
-        return expenses.map { list ->
-            list.sumOf { it.amount }
-        }
+        return expenseDao.getTotalExpenses().map { it ?: 0.0 }
     }
     
     override fun getMonthlyReport(yearMonth: YearMonth): Flow<Report> {
-        return expenses.map { list ->
-            val monthExpenses = list.filter { expense ->
-                YearMonth.from(expense.date) == yearMonth
-            }
-            
+        val yearMonthStr = yearMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+        return expenseDao.getExpensesByMonth(yearMonthStr).map { monthExpenses ->
             val totalExpenses = monthExpenses.sumOf { it.amount }
             val expenseCount = monthExpenses.size
-            
+
             val categoryBreakdown = monthExpenses.groupBy { it.category }
                 .mapValues { (_, expenses) -> expenses.sumOf { it.amount } }
-            
+
             val topCategories = categoryBreakdown.toList()
                 .sortedByDescending { it.second }
                 .take(5)
@@ -144,27 +149,45 @@ class ExpenseRepository private constructor(private val context: Context) : IExp
      */
     suspend fun generateReportPDF(): ExportResult {
         return try {
-            fileExportManager.exportToPDF(_expenses.value)
+            val currentExpenses = getCurrentExpensesList()
+            fileExportManager.exportToPDF(currentExpenses)
         } catch (e: Exception) {
             // Fallback to text report if PDF fails
-            fileExportManager.exportToTextReport(_expenses.value)
+            val currentExpenses = getCurrentExpensesList()
+            fileExportManager.exportToTextReport(currentExpenses)
         }
     }
 
     suspend fun generateReportCSV(): ExportResult {
-        return fileExportManager.exportToCSV(_expenses.value)
+        val currentExpenses = getCurrentExpensesList()
+        return fileExportManager.exportToCSV(currentExpenses)
+    }
+
+    private suspend fun getCurrentExpensesList(): List<Expense> {
+        return try {
+            // Get current expenses from database
+            var expensesList = emptyList<Expense>()
+            expenseDao.getAllExpenses().collect { expenses ->
+                expensesList = expenses
+                return@collect
+            }
+            expensesList
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     suspend fun createShareablePDFReport(): ExportResult {
-        return fileExportManager.exportToPDF(_expenses.value)
+        val currentExpenses = getCurrentExpensesList()
+        return fileExportManager.exportToPDF(currentExpenses)
     }
 
     fun createShareIntent(pdfResult: ExportResult.Success): android.content.Intent {
         return fileExportManager.createShareIntent(pdfResult.uri)
     }
 
-    fun getShareableReportData(): String {
-        val expenses = _expenses.value
+    suspend fun getShareableReportData(): String {
+        val expenses = getCurrentExpensesList()
         val totalAmount = expenses.sumOf { it.amount }
         val expenseCount = expenses.size
 
