@@ -45,6 +45,8 @@ import android.Manifest
 import androidx.compose.ui.platform.LocalContext
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import java.io.File
 import android.os.Build
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,28 +82,66 @@ fun AddExpenseScreen(
     var errorMessage by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
     var showSuccessAnimation by remember { mutableStateOf(false) }
+    var showImageSourceDialog by remember { mutableStateOf(false) }
     
     // Context and coroutine scope
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Image picker launcher
+    // Create temporary file for camera capture
+    val tempImageUri = remember {
+        try {
+            val tempFile = File(context.cacheDir, "temp_receipt_${System.currentTimeMillis()}.jpg")
+            FileProvider.getUriForFile(
+                context,
+                "com.example.kotlinassessmentapp.fileprovider",
+                tempFile
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("AddExpenseScreen", "Failed to create temp file URI", e)
+            null
+        }
+    }
+
+    // Image picker launcher (Gallery)
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         receiptImageUri = uri
     }
 
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success) {
+            receiptImageUri = tempImageUri
+        }
+    }
+
     // Permission launcher for storage access
-    val permissionLauncher = rememberLauncherForActivityResult(
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            // Permission granted, launch image picker
-            imagePickerLauncher.launch("image/*")
+            showImageSourceDialog = true
         } else {
-            // Permission denied, show message
             android.widget.Toast.makeText(context, "Storage permission is required to select images", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Permission launcher for camera access
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            tempImageUri?.let { uri ->
+                cameraLauncher.launch(uri)
+            } ?: run {
+                android.widget.Toast.makeText(context, "Failed to create temporary file for camera", android.widget.Toast.LENGTH_LONG).show()
+            }
+        } else {
+            android.widget.Toast.makeText(context, "Camera permission is required to take photos", android.widget.Toast.LENGTH_LONG).show()
         }
     }
     
@@ -276,23 +316,8 @@ fun AddExpenseScreen(
                 .fillMaxWidth()
                 .height(if (receiptImageUri != null) 200.dp else 100.dp)
                 .clickable {
-                    // Check permission before launching image picker
-                    val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        Manifest.permission.READ_MEDIA_IMAGES
-                    } else {
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                    }
-
-                    when {
-                        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED -> {
-                            // Permission already granted
-                            imagePickerLauncher.launch("image/*")
-                        }
-                        else -> {
-                            // Request permission
-                            permissionLauncher.launch(permission)
-                        }
-                    }
+                    // Show dialog to choose between camera and gallery
+                    showImageSourceDialog = true
                 },
             colors = CardDefaults.cardColors(
                 containerColor = if (receiptImageUri != null)
@@ -473,6 +498,85 @@ fun AddExpenseScreen(
                 )
             }
         }
+    }
+
+    // Image Source Selection Dialog
+    if (showImageSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceDialog = false },
+            title = { Text("Select Image Source") },
+            text = { Text("Choose how you want to add your receipt image") },
+            confirmButton = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(
+                        onClick = {
+                            showImageSourceDialog = false
+                            // Check camera permission and launch camera
+                            if (tempImageUri != null) {
+                                when {
+                                    ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED -> {
+                                        try {
+                                            cameraLauncher.launch(tempImageUri)
+                                        } catch (e: Exception) {
+                                            android.widget.Toast.makeText(context, "Camera not available: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                    else -> {
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    }
+                                }
+                            } else {
+                                android.widget.Toast.makeText(context, "Camera temporarily unavailable", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Camera")
+                    }
+
+                    TextButton(
+                        onClick = {
+                            showImageSourceDialog = false
+                            // Check storage permission
+                            val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                Manifest.permission.READ_MEDIA_IMAGES
+                            } else {
+                                Manifest.permission.READ_EXTERNAL_STORAGE
+                            }
+
+                            when {
+                                ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED -> {
+                                    imagePickerLauncher.launch("image/*")
+                                }
+                                else -> {
+                                    storagePermissionLauncher.launch(permission)
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Gallery")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImageSourceDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

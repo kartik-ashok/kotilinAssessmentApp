@@ -14,4 +14,7 @@
     
     <!-- Cache directory for temporary files -->
     <external-cache-path name="external_cache" path="." />
+
+    <!-- Internal cache directory for camera captures -->
+    <cache-path name="cache" path="." />
 </paths>

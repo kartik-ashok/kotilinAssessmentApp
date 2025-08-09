@@ -53,7 +53,9 @@ fun ExpenseReportScreen(
     val repository = ExpenseRepository.getInstance(context)
     val coroutineScope = rememberCoroutineScope()
 
-    var isExporting by remember { mutableStateOf(false) }
+    var isExportingPDF by remember { mutableStateOf(false) }
+    var isExportingCSV by remember { mutableStateOf(false) }
+    var isSharing by remember { mutableStateOf(false) }
 
     // Notification permission launcher for Android 13+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -115,7 +117,7 @@ fun ExpenseReportScreen(
                         text = { Text("Export as PDF") },
                         onClick = {
                             showExportMenu = false
-                            isExporting = true
+                            isExportingPDF = true
                             coroutineScope.launch {
                                 when (val result = repository.generateReportPDF()) {
                                     is ExportResult.Success -> {
@@ -125,20 +127,20 @@ fun ExpenseReportScreen(
                                         Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
                                     }
                                 }
-                                isExporting = false
+                                isExportingPDF = false
                             }
                         },
                         leadingIcon = {
                             Icon(Icons.Default.PictureAsPdf, contentDescription = null)
                         },
-                        enabled = !isExporting
+                        enabled = !isExportingPDF
                     )
                     
                     DropdownMenuItem(
                         text = { Text("Export as CSV") },
                         onClick = {
                             showExportMenu = false
-                            isExporting = true
+                            isExportingCSV = true
                             coroutineScope.launch {
                                 when (val result = repository.generateReportCSV()) {
                                     is ExportResult.Success -> {
@@ -148,20 +150,20 @@ fun ExpenseReportScreen(
                                         Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
                                     }
                                 }
-                                isExporting = false
+                                isExportingCSV = false
                             }
                         },
                         leadingIcon = {
                             Icon(Icons.Default.TableChart, contentDescription = null)
                         },
-                        enabled = !isExporting
+                        enabled = !isExportingCSV
                     )
                     
                     DropdownMenuItem(
                         text = { Text("Share Report") },
                         onClick = {
                             showExportMenu = false
-                            isExporting = true
+                            isSharing = true
                             coroutineScope.launch {
                                 when (val result = repository.createShareablePDFReport()) {
                                     is ExportResult.Success -> {
@@ -172,13 +174,13 @@ fun ExpenseReportScreen(
                                         Toast.makeText(context, "Share failed: ${result.message}", Toast.LENGTH_LONG).show()
                                     }
                                 }
-                                isExporting = false
+                                isSharing = false
                             }
                         },
                         leadingIcon = {
                             Icon(Icons.Default.Share, contentDescription = null)
                         },
-                        enabled = !isExporting
+                        enabled = !isSharing
                     )
                 }
             }
@@ -260,7 +262,7 @@ fun ExpenseReportScreen(
             ) {
                 OutlinedButton(
                     onClick = {
-                        isExporting = true
+                        isExportingPDF = true
                         coroutineScope.launch {
                             when (val result = repository.generateReportPDF()) {
                                 is ExportResult.Success -> {
@@ -270,13 +272,13 @@ fun ExpenseReportScreen(
                                     Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
-                            isExporting = false
+                            isExportingPDF = false
                         }
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = !isExporting
+                    enabled = !isExportingPDF
                 ) {
-                    if (isExporting) {
+                    if (isExportingPDF) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(18.dp),
                             strokeWidth = 2.dp
@@ -294,7 +296,7 @@ fun ExpenseReportScreen(
                 
                 OutlinedButton(
                     onClick = {
-                        isExporting = true
+                        isExportingCSV = true
                         coroutineScope.launch {
                             when (val result = repository.generateReportCSV()) {
                                 is ExportResult.Success -> {
@@ -304,13 +306,13 @@ fun ExpenseReportScreen(
                                     Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
-                            isExporting = false
+                            isExportingCSV = false
                         }
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = !isExporting
+                    enabled = !isExportingCSV
                 ) {
-                    if (isExporting) {
+                    if (isExportingCSV) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(18.dp),
                             strokeWidth = 2.dp
@@ -332,7 +334,7 @@ fun ExpenseReportScreen(
             // Share Button (PDF only)
             Button(
                 onClick = {
-                    isExporting = true
+                    isSharing = true
                     coroutineScope.launch {
                         when (val result = repository.createShareablePDFReport()) {
                             is ExportResult.Success -> {
@@ -343,13 +345,13 @@ fun ExpenseReportScreen(
                                 Toast.makeText(context, "Share failed: ${result.message}", Toast.LENGTH_LONG).show()
                             }
                         }
-                        isExporting = false
+                        isSharing = false
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isExporting
+                enabled = !isSharing
             ) {
-                if (isExporting) {
+                if (isSharing) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp,
