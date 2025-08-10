@@ -39,6 +39,11 @@ class FileExportManager(private val context: Context) {
     companion object {
         private const val FILE_PROVIDER_AUTHORITY = "com.example.kotlinassessmentapp.fileprovider"
         private const val BASE_FILENAME = "expense_report"
+        // Pre-define formatters for better performance
+        private val DATE_FORMATTER = DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm")
+        private val DATE_ONLY_FORMATTER = DateTimeFormatter.ofPattern("MMM dd, yyyy")
+        private val ISO_DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE
+        private val SHORT_DATE_FORMATTER = DateTimeFormatter.ofPattern("MMM dd")
     }
 
     private val notificationManager = ExportNotificationManager(context)
@@ -49,6 +54,11 @@ class FileExportManager(private val context: Context) {
      */
     suspend fun exportToPDF(expenses: List<Expense>): ExportResult = withContext(Dispatchers.IO) {
         try {
+            // Pre-calculate values to avoid repeated calculations
+            val totalAmount = expenses.sumOf { it.amount }
+            val expenseCount = expenses.size
+            val currentDateTime = java.time.LocalDateTime.now().format(DATE_FORMATTER)
+            
             val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 // Use MediaStore for Android 10+
                 val contentValues = ContentValues().apply {
@@ -73,14 +83,11 @@ class FileExportManager(private val context: Context) {
                         document.add(Paragraph(" "))
 
                         // Add summary
-                        val totalAmount = expenses.sumOf { it.amount }
-                        val expenseCount = expenses.size
-
                         val summaryFont = Font(Font.FontFamily.HELVETICA, 16f, Font.BOLD)
                         document.add(Paragraph("Summary", summaryFont))
                         document.add(Paragraph("Total Expenses: $${String.format("%.2f", totalAmount)}"))
                         document.add(Paragraph("Number of Expenses: $expenseCount"))
-                        document.add(Paragraph("Generated on: ${java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))}"))
+                        document.add(Paragraph("Generated on: $currentDateTime"))
                         document.add(Paragraph(" "))
 
                         // Add expenses table
@@ -99,9 +106,10 @@ class FileExportManager(private val context: Context) {
                             table.addCell("Amount")
                             table.addCell("Description")
 
-                            // Table data
-                            expenses.sortedByDescending { it.date }.forEach { expense ->
-                                table.addCell(expense.date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")))
+                            // Table data - use sorted list to avoid repeated sorting
+                            val sortedExpenses = expenses.sortedByDescending { it.date }
+                            sortedExpenses.forEach { expense ->
+                                table.addCell(expense.date.format(DATE_ONLY_FORMATTER))
                                 table.addCell(expense.title)
                                 table.addCell(expense.category.name)
                                 table.addCell("$${String.format("%.2f", expense.amount)}")
@@ -137,14 +145,11 @@ class FileExportManager(private val context: Context) {
                 document.add(Paragraph(" "))
 
                 // Add summary
-                val totalAmount = expenses.sumOf { it.amount }
-                val expenseCount = expenses.size
-
                 val summaryFont = Font(Font.FontFamily.HELVETICA, 16f, Font.BOLD)
                 document.add(Paragraph("Summary", summaryFont))
                 document.add(Paragraph("Total Expenses: $${String.format("%.2f", totalAmount)}"))
                 document.add(Paragraph("Number of Expenses: $expenseCount"))
-                document.add(Paragraph("Generated on: ${java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))}"))
+                document.add(Paragraph("Generated on: $currentDateTime"))
                 document.add(Paragraph(" "))
 
                 // Add expenses table
@@ -163,9 +168,10 @@ class FileExportManager(private val context: Context) {
                     table.addCell("Amount")
                     table.addCell("Description")
 
-                    // Table data
-                    expenses.sortedByDescending { it.date }.forEach { expense ->
-                        table.addCell(expense.date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")))
+                    // Table data - use sorted list to avoid repeated sorting
+                    val sortedExpenses = expenses.sortedByDescending { it.date }
+                    sortedExpenses.forEach { expense ->
+                        table.addCell(expense.date.format(SHORT_DATE_FORMATTER))
                         table.addCell(expense.title)
                         table.addCell(expense.category.name)
                         table.addCell("$${String.format("%.2f", expense.amount)}")
@@ -202,13 +208,16 @@ class FileExportManager(private val context: Context) {
      */
     suspend fun exportToCSV(expenses: List<Expense>): ExportResult = withContext(Dispatchers.IO) {
         try {
+            // Pre-sort expenses to avoid repeated sorting
+            val sortedExpenses = expenses.sortedByDescending { it.date }
+            
             val csvContent = buildString {
                 // CSV Header
                 appendLine("Date,Title,Category,Amount,Description")
 
                 // CSV Data
-                expenses.sortedByDescending { it.date }.forEach { expense ->
-                    append("${expense.date.format(DateTimeFormatter.ISO_LOCAL_DATE)},")
+                sortedExpenses.forEach { expense ->
+                    append("${expense.date.format(ISO_DATE_FORMATTER)},")
                     append("\"${expense.title.replace("\"", "\"\"")}\",")
                     append("\"${expense.category.name}\",")
                     append("${expense.amount},")
@@ -278,29 +287,32 @@ class FileExportManager(private val context: Context) {
      */
     suspend fun exportToTextReport(expenses: List<Expense>): ExportResult = withContext(Dispatchers.IO) {
         try {
+            // Pre-calculate values to avoid repeated calculations
+            val totalAmount = expenses.sumOf { it.amount }
+            val expenseCount = expenses.size
+            val currentDateTime = java.time.LocalDateTime.now().format(DATE_FORMATTER)
+            val sortedExpenses = expenses.sortedByDescending { it.date }
+            
             val reportContent = buildString {
                 appendLine("EXPENSE REPORT")
                 appendLine("=".repeat(50))
                 appendLine()
 
-                val totalAmount = expenses.sumOf { it.amount }
-                val expenseCount = expenses.size
-
                 appendLine("SUMMARY")
                 appendLine("-".repeat(20))
                 appendLine("Total Expenses: $${String.format("%.2f", totalAmount)}")
                 appendLine("Number of Expenses: $expenseCount")
-                appendLine("Generated on: ${java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))}")
+                appendLine("Generated on: $currentDateTime")
                 appendLine()
 
-                if (expenses.isNotEmpty()) {
+                if (sortedExpenses.isNotEmpty()) {
                     appendLine("EXPENSE DETAILS")
                     appendLine("-".repeat(50))
                     appendLine("Date\t\tTitle\t\tCategory\tAmount\tDescription")
                     appendLine("-".repeat(50))
 
-                    expenses.sortedByDescending { it.date }.forEach { expense ->
-                        appendLine("${expense.date.format(DateTimeFormatter.ofPattern("MMM dd"))}\t\t${expense.title.take(15)}\t\t${expense.category.name}\t$${String.format("%.2f", expense.amount)}\t${expense.description.take(30)}")
+                    sortedExpenses.forEach { expense ->
+                        appendLine("${expense.date.format(SHORT_DATE_FORMATTER)}\t\t${expense.title.take(15)}\t\t${expense.category.name}\t$${String.format("%.2f", expense.amount)}\t${expense.description.take(30)}")
                     }
                 }
             }

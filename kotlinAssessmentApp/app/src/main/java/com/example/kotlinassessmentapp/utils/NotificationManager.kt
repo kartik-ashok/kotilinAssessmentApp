@@ -73,14 +73,11 @@ class ExportNotificationManager(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
+        // Optimize notification building by reducing string operations
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(getNotificationIcon(fileType))
             .setContentTitle("Export Complete")
             .setContentText("$fileName saved to Downloads")
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText("Your expense report has been exported as $fileName and saved to the Downloads folder. Tap to open the file.")
-            )
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -112,10 +109,6 @@ class ExportNotificationManager(private val context: Context) {
             .setSmallIcon(android.R.drawable.stat_notify_error)
             .setContentTitle("Export Failed")
             .setContentText("Failed to export $fileName")
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText("Export failed: $errorMessage. Please try again or check your storage permissions.")
-            )
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ERROR)

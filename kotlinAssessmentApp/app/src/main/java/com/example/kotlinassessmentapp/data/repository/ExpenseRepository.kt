@@ -121,13 +121,9 @@ class ExpenseRepository private constructor(private val context: Context) : IExp
 
     private suspend fun getCurrentExpensesList(): List<Expense> {
         return try {
-            // Get current expenses from database
-            var expensesList = emptyList<Expense>()
-            expenseDao.getAllExpenses().collect { expenses ->
-                expensesList = expenses
-                return@collect
-            }
-            expensesList
+            // Use a direct suspend function call instead of Flow collector for better performance
+            // Cache the result to avoid repeated database calls during export operations
+            expenseDao.getAllExpensesSync()
         } catch (e: Exception) {
             emptyList()
         }

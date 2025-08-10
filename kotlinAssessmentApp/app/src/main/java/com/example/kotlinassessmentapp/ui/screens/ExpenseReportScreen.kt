@@ -264,15 +264,18 @@ fun ExpenseReportScreen(
                     onClick = {
                         isExportingPDF = true
                         coroutineScope.launch {
-                            when (val result = repository.generateReportPDF()) {
-                                is ExportResult.Success -> {
-                                    Toast.makeText(context, "Report exported to Downloads: ${result.filePath}", Toast.LENGTH_LONG).show()
+                            try {
+                                when (val result = repository.generateReportPDF()) {
+                                    is ExportResult.Success -> {
+                                        Toast.makeText(context, "Report exported to Downloads: ${result.filePath}", Toast.LENGTH_LONG).show()
+                                    }
+                                    is ExportResult.Error -> {
+                                        Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
+                                    }
                                 }
-                                is ExportResult.Error -> {
-                                    Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
-                                }
+                            } finally {
+                                isExportingPDF = false
                             }
-                            isExportingPDF = false
                         }
                     },
                     modifier = Modifier.weight(1f),
@@ -291,22 +294,25 @@ fun ExpenseReportScreen(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Export PDF")
+                    Text(if (isExportingPDF) "Exporting..." else "Export PDF")
                 }
                 
                 OutlinedButton(
                     onClick = {
                         isExportingCSV = true
                         coroutineScope.launch {
-                            when (val result = repository.generateReportCSV()) {
-                                is ExportResult.Success -> {
-                                    Toast.makeText(context, "CSV exported to Downloads: ${result.filePath}", Toast.LENGTH_LONG).show()
+                            try {
+                                when (val result = repository.generateReportCSV()) {
+                                    is ExportResult.Success -> {
+                                        Toast.makeText(context, "CSV exported to Downloads: ${result.filePath}", Toast.LENGTH_LONG).show()
+                                    }
+                                    is ExportResult.Error -> {
+                                        Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
+                                    }
                                 }
-                                is ExportResult.Error -> {
-                                    Toast.makeText(context, "Export failed: ${result.message}", Toast.LENGTH_LONG).show()
-                                }
+                            } finally {
+                                isExportingCSV = false
                             }
-                            isExportingCSV = false
                         }
                     },
                     modifier = Modifier.weight(1f),
@@ -325,7 +331,7 @@ fun ExpenseReportScreen(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Export CSV")
+                    Text(if (isExportingCSV) "Exporting..." else "Export CSV")
                 }
             }
             
@@ -336,16 +342,19 @@ fun ExpenseReportScreen(
                 onClick = {
                     isSharing = true
                     coroutineScope.launch {
-                        when (val result = repository.createShareablePDFReport()) {
-                            is ExportResult.Success -> {
-                                val shareIntent = repository.createShareIntent(result)
-                                context.startActivity(Intent.createChooser(shareIntent, "Share Report"))
+                        try {
+                            when (val result = repository.createShareablePDFReport()) {
+                                is ExportResult.Success -> {
+                                    val shareIntent = repository.createShareIntent(result)
+                                    context.startActivity(Intent.createChooser(shareIntent, "Share Report"))
+                                }
+                                is ExportResult.Error -> {
+                                    Toast.makeText(context, "Share failed: ${result.message}", Toast.LENGTH_LONG).show()
+                                }
                             }
-                            is ExportResult.Error -> {
-                                Toast.makeText(context, "Share failed: ${result.message}", Toast.LENGTH_LONG).show()
-                            }
+                        } finally {
+                            isSharing = false
                         }
-                        isSharing = false
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -365,7 +374,7 @@ fun ExpenseReportScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Share Report")
+                Text(if (isSharing) "Preparing..." else "Share Report")
             }
         }
         

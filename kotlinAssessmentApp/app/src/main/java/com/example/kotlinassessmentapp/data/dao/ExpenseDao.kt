@@ -25,6 +25,12 @@ interface ExpenseDao {
     fun getAllExpenses(): Flow<List<Expense>>
     
     /**
+     * Get all expenses ordered by date (newest first) - Synchronous version for export operations
+     */
+    @Query("SELECT * FROM expenses ORDER BY date DESC")
+    suspend fun getAllExpensesSync(): List<Expense>
+    
+    /**
      * Get expense by ID
      */
     @Query("SELECT * FROM expenses WHERE id = :id")
