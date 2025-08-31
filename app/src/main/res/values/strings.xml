@@ -1,3 +1,7 @@
 <resources>
+<<<<<<< HEAD
     <string name="app_name">crud4</string>
+=======
+    <string name="app_name">news app</string>
+>>>>>>> 3f36c4f7dd7f47ced76ba2aa04eaaaeea6777ad9
 </resources>

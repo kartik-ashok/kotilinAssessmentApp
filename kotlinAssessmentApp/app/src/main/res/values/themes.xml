@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 
+    Theme for Compose app following enterprise patterns
+    Uses Material Components for proper theme inheritance
+    This is REQUIRED even for pure Compose apps for Activity theming
+    -->
+    <style name="Theme.KotlinAssessmentApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color for Android system UI -->
+        <item name="android:colorPrimary">@color/primaryColor</item>
+        <item name="android:colorPrimaryDark">@color/secondaryColor</item>
+        <item name="android:colorAccent">@color/yellow</item>
+        
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        
+        <!-- Enable edge-to-edge display -->
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+<!--    <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">-->
+<!--        &lt;!&ndash; Background color &ndash;&gt;-->
+<!--        <item name="windowSplashScreenBackground">@color/yellow</item>-->
+
+<!--        &lt;!&ndash; Logo icon (should be a vector drawable for animation) &ndash;&gt;-->
+<!--        <item name="windowSplashScreenAnimatedIcon">@drawable/zomato_logo_transparent_background</item>-->
+
+<!--        &lt;!&ndash; Optional: Control icon animation duration (default is 1000ms) &ndash;&gt;-->
+<!--        <item name="windowSplashScreenAnimationDuration">700</item>-->
+
+<!--&lt;!&ndash;        &lt;!&ndash; Optional: Center logo vertically or align to bottom &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;        <item name="windowSplashScreenIconCenter">true</item>&ndash;&gt;-->
+
+<!--&lt;!&ndash;        &lt;!&ndash; Add branding image below the icon (useful for taglines or secondary logo) &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;        <item name="windowSplashScreenBrandingImage">@drawable/splash_branding</item>&ndash;&gt;-->
+
+<!--        &lt;!&ndash; Post-splash app theme &ndash;&gt;-->
+<!--        <item name="postSplashScreenTheme">@style/Theme.KotlinAssessmentApp</item>-->
+<!--    </style>-->
+
+</resources>

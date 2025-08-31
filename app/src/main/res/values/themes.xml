@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+<<<<<<< HEAD
     <style name="Theme.Crud4" parent="android:Theme.Material.Light.NoActionBar" />
+=======
+    <style name="Theme.NewsApp" parent="android:Theme.Material.Light.NoActionBar" />
+>>>>>>> 3f36c4f7dd7f47ced76ba2aa04eaaaeea6777ad9
 </resources>

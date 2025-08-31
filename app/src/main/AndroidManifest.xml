@@ -2,10 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+<<<<<<< HEAD
     <!-- Internet permission required for API calls -->
     <uses-permission android:name="android.permission.INTERNET" />
 <!--    <uses-permission android:name="android.permission.LOCATION_HARDWARE" />-->
 
+=======
+>>>>>>> 3f36c4f7dd7f47ced76ba2aa04eaaaeea6777ad9
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -14,14 +17,22 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+<<<<<<< HEAD
         android:theme="@style/Theme.Crud4"
         android:networkSecurityConfig="@xml/network_security_config"
         android:usesCleartextTraffic="true">
+=======
+        android:theme="@style/Theme.SplashScreen.DayNight">
+>>>>>>> 3f36c4f7dd7f47ced76ba2aa04eaaaeea6777ad9
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+<<<<<<< HEAD
             android:theme="@style/Theme.Crud4">
+=======
+            android:theme="@style/Theme.SplashScreen.DayNight">
+>>>>>>> 3f36c4f7dd7f47ced76ba2aa04eaaaeea6777ad9
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

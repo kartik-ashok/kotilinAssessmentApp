@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3f36c4f7dd7f47ced76ba2aa04eaaaeea6777ad9
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,12 +9,21 @@ plugins {
 }
 
 android {
+<<<<<<< HEAD
     namespace = "com.example.crud4"
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.crud4"
         minSdk = 21
+=======
+    namespace = "com.example.newsapp"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "com.example.newsapp"
+        minSdk = 24
+>>>>>>> 3f36c4f7dd7f47ced76ba2aa04eaaaeea6777ad9
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -38,6 +50,7 @@ android {
     buildFeatures {
         compose = true
     }
+<<<<<<< HEAD
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.8"
     }
@@ -45,6 +58,15 @@ android {
 
 dependencies {
     // Core Android dependencies
+=======
+}
+
+dependencies {
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    // Material 3 support
+    implementation("androidx.compose.material3:material3")
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.27.0")
+>>>>>>> 3f36c4f7dd7f47ced76ba2aa04eaaaeea6777ad9
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -53,6 +75,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+<<<<<<< HEAD
     
     // Retrofit - HTTP client for making API calls to JSONPlaceholder
     implementation(libs.retrofit.core)
@@ -83,6 +106,8 @@ dependencies {
 
 
     // Testing dependencies
+=======
+>>>>>>> 3f36c4f7dd7f47ced76ba2aa04eaaaeea6777ad9
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
